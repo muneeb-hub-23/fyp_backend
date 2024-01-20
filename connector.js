@@ -1,4 +1,13 @@
 const mysql = require("mysql2")
+const pool = mysql.createPool({
+    host: "localhost",
+    user: "root",
+    password: "root",
+    database: "attendence",
+    port: 3306
+  });
+
+
 const con = mysql.createConnection({
     host: "localhost",
     user: "root",
@@ -13,3 +22,4 @@ con.connect((err)=>{
 });
 
 module.exports.con = con;
+module.exports.pool = pool;
