@@ -112,10 +112,10 @@ app.post('/mark-attendance', (req, res) => {
 
 
   let date = req.body[0].date
-  let status = req.body[0].status
-  console.log(req.body)
+  let status = req.body[2]
   let admission_number = req.body[1].admission_number
-let qry = "INSERT INTO `attendence`.`attendence` (`date`, `r"+admission_number+"`) VALUES (?,?);"
+
+  let qry = "INSERT INTO `attendence`.`attendence` (`date`, `r"+admission_number+"`) VALUES (?,?);"
 let qry2 = "UPDATE `attendence`.`attendence` SET `r"+admission_number+"` = '"+status+"' WHERE (`date` = '"+convertDateFormat(date)+"');" 
 
  mysql.query(qry, [convertDateFormat(date),status],(err,results)=>{
