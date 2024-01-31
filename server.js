@@ -85,7 +85,7 @@ function getDatesArray(month, year) {
 
   const monthIndex = monthNames.indexOf(month);
   if (monthIndex === -1 || year < 1) {
-    console.error('Invalid input. Please provide a valid month and year.');
+    console.error('hello Invalid input. Please provide a valid month and year.'+monthIndex);
     return [];
   }
 
@@ -172,20 +172,44 @@ let qry = "UPDATE `attendence`.`students` SET `roll_no` = '"+value.roll_no+"', `
       res.send("all ok");
 });  
 });
-app.post('/mark-attendance', (req, res) => {
+
+
+
+
+
+
+app.post('/mark-attendance', async (req, res) => {
+
+  let date = getCurrentDate();
+  let admission_number = req.body[0]
+  let status = req.body[1]
+  let qry = "UPDATE `attendence`.`attendence` SET `d"+date+"` = '"+status+"' WHERE (`admission_number` = '"+admission_number+"');"
+  let qry2 = "ALTER TABLE `attendence`.`attendence` ADD COLUMN `"+date+"` VARCHAR(45);"
   
+  try {
+    queryAsync(qry);
 
-  let date = req.body[0].date
-  date = convertDateFormat(date)
-  date = 'd'+date
-  let status = req.body[2]
-  let admission_number = req.body[1].admission_number
+    
+    } catch (error) {
+      try {
+        queryAsync(qry2);
+    
+        
+        try {
+          queryAsync(qry);
+          return
+          
+          } catch (error) {
+            console.log(error);
+            return
+          }
+        } catch (error) {
+          console.log(error);
+          return
+        }
+    }
 
-let qry = "UPDATE `attendence`.`attendence` SET `"+date+"` = '"+status+"' WHERE (`admission_number` = '"+admission_number+"');"
-let qry2 = "ALTER TABLE `attendence`.`attendence` ADD COLUMN `"+date+"` VARCHAR(45);"
-
-
- mysql.query(qry,(err,results)=>{
+  mysql.query(qry,(err,results)=>{
   if (err){
   mysql.query(qry2,(err,results)=>{
     if (err){
@@ -199,17 +223,25 @@ let qry2 = "ALTER TABLE `attendence`.`attendence` ADD COLUMN `"+date+"` VARCHAR(
         }
         else
         {
-          res.send("all ok")
+          console.log("all ok "+status)
         }
     })
   }
   }); 
 }
 else{
-  res.send('all ok')
+  console.log("all ok "+status)
+  
 }
 });
 });
+
+
+
+
+
+
+
 app.post('/view-attendance', async (req, res) => {
 
     let present = [[],[],[],[],[],[]];
@@ -288,32 +320,29 @@ app.post('/today-ict-absent', async (req,res)=>{
 })
 app.post('/today-ict-leave', async (req,res)=>{
 
+  try {
+  const result = await queryAsync("SELECT count(d"+getCurrentDate()+") as leaves FROM attendence.attendence where d"+getCurrentDate()+" = 'l';");
+  res.send(result[0])
+  } catch (error) {
+    console.log(error);
+  }
+})  
+app.post('/today-ict-lates', async (req,res)=>{
+
 
   try {
-    const result = await queryAsync("SELECT count(d"+getCurrentDate()+") as leaves FROM attendence.attendence where d"+getCurrentDate()+" = 'l';");
+    const result = await queryAsync("SELECT count(d"+getCurrentDate()+") as lates FROM attendence.attendence where d"+getCurrentDate()+" = 'lt';");
     res.send(result[0])
     } catch (error) {
       console.log(error);
+      return
     }
 })  
-
-
-
-
-
-
-app.post('/convertmonthandyeartoprogress', async (req,res)=>{
+app.post('/dashboard-charts', async (req,res)=>{
 
   let month = req.body[0]
   let year = req.body[1]
-  const monthNumber = getMonthNumber(month);
-  const dates = getDatesArray(month, year)
-  const responseArray = [[],[],[],[],[],[]];
-  const firstDate = formatDateString(year+month+dates[0])
-  const lastDate = formatDateString(year+month+dates.slice(-1))
-  const firstdatealter = dates[0]
-  const lastdatealter = dates.slice(-1)
-  const lastDate1 = lastdatealter+1;
+  const responseArray = [];
   const classSections = [
     { class: '1st-year', section: 'a' },
     { class: '1st-year', section: 'b' },
@@ -323,12 +352,13 @@ app.post('/convertmonthandyeartoprogress', async (req,res)=>{
     { class: '3rd-year', section: 'b' }
   ];
 
-for(var x = firstdatealter; x<=lastdatealter; x++){
-var xa = x
 
 for(var m=0; m<6; m++){
 var strength=0;
 var present=0;
+var absent=0;
+var leave=0;
+var lates=0;
 
   try {
     const result = await queryAsync("select admission_number,class,section,count(admission_number) as strength from students where class = '"+classSections[m].class+"' and section='"+classSections[m].section+"';");
@@ -336,30 +366,164 @@ var present=0;
     } catch (error) {
       console.log(error);
     }
-    try {
-      const result = await queryAsync("SELECT s.admission_number,d"+year+getMonthNumber(month)+dates[x-1]+",COUNT(a.d"+year+getMonthNumber(month)+dates[x-1]+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+classSections[m].class+"' AND s.section = '"+classSections[m].section+"' AND a.d"+year+getMonthNumber(month)+dates[x-1]+" = 'p';");
-      present=result[0].count_of_present
-  
 
+
+    try {
+      const result = await queryAsync("SELECT s.admission_number,d"+getCurrentDate()+",COUNT(a.d"+getCurrentDate()+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+classSections[m].class+"' AND s.section = '"+classSections[m].section+"' AND a.d"+getCurrentDate()+" = 'p';");
+      present=result[0].count_of_present
       } catch (error) {
         console.log(error);
       }
+      try {
+        const result = await queryAsync("SELECT s.admission_number,d"+getCurrentDate()+",COUNT(a.d"+getCurrentDate()+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+classSections[m].class+"' AND s.section = '"+classSections[m].section+"' AND a.d"+getCurrentDate()+" = 'a';");
+        absent=result[0].count_of_present
+        } catch (error) {
+          console.log(error);
+        }
+        try {
+          const result = await queryAsync("SELECT s.admission_number,d"+getCurrentDate()+",COUNT(a.d"+getCurrentDate()+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+classSections[m].class+"' AND s.section = '"+classSections[m].section+"' AND a.d"+getCurrentDate()+" = 'l';");
+          leave=result[0].count_of_present
+          } catch (error) {
+            console.log(error);
+          }
+          try {
+            const result = await queryAsync("SELECT s.admission_number,d"+getCurrentDate()+",COUNT(a.d"+getCurrentDate()+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+classSections[m].class+"' AND s.section = '"+classSections[m].section+"' AND a.d"+getCurrentDate()+" = 'lt';");
+            lates=result[0].count_of_present
+            } catch (error) {
+              console.log(error);
+            }
+responseArray.push([strength,present,absent,leave,lates])
+  }
+
+res.send(responseArray)
+})
+app.post('/dashboard-chart-expanded', async (req,res)=>{
+  const responseArray = [];
+  const class1 = req.body[0]
+  const section = req.body[1]
+  for(var m=0; m<1; m++){
+    var strength=0;
+    var present=0;
+    var absent=0;
+    var leave=0;
+    var lates=0;
+    
+      try {
+        const result = await queryAsync("select admission_number,class,section,count(admission_number) as strength from students where class = '"+class1+"' and section='"+section+"';");
+        strength=result[0].strength
+        } catch (error) {
+          console.log(error);
+        }
+    
+
+        try {
+          const result = await queryAsync("SELECT s.admission_number,d"+getCurrentDate()+",COUNT(a.d"+getCurrentDate()+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+class1+"' AND s.section = '"+section+"' AND a.d"+getCurrentDate()+" = 'p';");
+          present=result[0].count_of_present
+          } catch (error) {
+            console.log(error);
+          }
+          try {
+            const result = await queryAsync("SELECT s.admission_number,d"+getCurrentDate()+",COUNT(a.d"+getCurrentDate()+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+class1+"' AND s.section = '"+section+"' AND a.d"+getCurrentDate()+" = 'a';");
+            absent=result[0].count_of_present
+            } catch (error) {
+              console.log(error);
+            }
+            try {
+              const result = await queryAsync("SELECT s.admission_number,d"+getCurrentDate()+",COUNT(a.d"+getCurrentDate()+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+class1+"' AND s.section = '"+section+"' AND a.d"+getCurrentDate()+" = 'l';");
+              leave=result[0].count_of_present
+              } catch (error) {
+                console.log(error);
+              }
+              try {
+                const result = await queryAsync("SELECT s.admission_number,d"+getCurrentDate()+",COUNT(a.d"+getCurrentDate()+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+class1+"' AND s.section = '"+section+"' AND a.d"+getCurrentDate()+" = 'lt';");
+                lates=result[0].count_of_present
+                } catch (error) {
+                  console.log(error);
+                }
+    responseArray.push(strength,present,absent,leave,lates)
+      }
+    
+    res.send(responseArray)
+});
+
+app.post('/student-is-listing', async (req,res)=>{
+  const class1 = req.body[0]
+  const section = req.body[1]
+  const query = "SELECT s.admission_number,s.roll_no,s.student_full_name,(d"+getCurrentDate()+") As status1 FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+class1+"' AND s.section = '"+section+"'"
+  try {
+    const result = await queryAsync(query);
+    res.send(result)
+    } catch (error) {
+      console.log(error);
+      return
+    }
+});
+
+
+
+
+
+// app.post('/convertmonthandyeartoprogress', async (req,res)=>{
+
+//   let month = req.body[0]
+//   let year = req.body[1]
+//   const monthNumber = getMonthNumber(month);
+//   const dates = getDatesArray(month, year)
+//   const responseArray = [[],[],[],[],[],[]];
+//   const firstDate = formatDateString(year+month+dates[0])
+//   const lastDate = formatDateString(year+month+dates.slice(-1))
+//   const firstdatealter = dates[0]
+//   const lastdatealter = dates.slice(-1)
+//   const lastDate1 = lastdatealter+1;
+//   const classSections = [
+//     { class: '1st-year', section: 'a' },
+//     { class: '1st-year', section: 'b' },
+//     { class: '2nd-year', section: 'a' },
+//     { class: '2nd-year', section: 'b' },
+//     { class: '3rd-year', section: 'a' },
+//     { class: '3rd-year', section: 'b' }
+//   ];
+
+// for(var x = firstdatealter; x<=lastdatealter; x++){
+// var xa = x
+
+// for(var m=0; m<6; m++){
+// var strength=0;
+// var present=0;
+
+//   try {
+//     const result = await queryAsync("select admission_number,class,section,count(admission_number) as strength from students where class = '"+classSections[m].class+"' and section='"+classSections[m].section+"';");
+//     strength=result[0].strength
+//     } catch (error) {
+//       console.log(error);
+//     }
+//     try {
+//       const result = await queryAsync("SELECT s.admission_number,d"+year+getMonthNumber(month)+dates[x-1]+",COUNT(a.d"+year+getMonthNumber(month)+dates[x-1]+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+classSections[m].class+"' AND s.section = '"+classSections[m].section+"' AND a.d"+year+getMonthNumber(month)+dates[x-1]+" = 'p';");
+//       present=result[0].count_of_present
+  
+
+//       } catch (error) {
+//         console.log(error);
+//       }
    
 
 
-var final = (present*100)/strength
-responseArray[m].push(final)
+// var final = (present*100)/strength
+// responseArray[m].push(final)
 
-  }
-}
-
-
+//   }
+// }
 
 
 
-res.send(responseArray)
 
-});
+
+// res.send(responseArray)
+
+// });
+
+
+
 app.listen(port,function(){
   console.log("server is up");
 })
