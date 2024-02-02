@@ -463,6 +463,50 @@ app.post('/student-is-listing', async (req,res)=>{
 
 
 
+
+
+
+
+
+
+function convertDateToDayForm(dateString) {
+  const year = dateString.slice(0, 4);
+  const month = dateString.slice(4, 6);
+  const day = dateString.slice(6);
+
+  const dateObj = new Date(`${year}-${month}-${day}`);
+  const dayOfWeek = dateObj.toLocaleString('en-us', { weekday: 'long' });
+
+  return dayOfWeek;
+}
+
+app.get('/fines', async (req,res) => {
+let sdate = 20240101
+let ssdate = sdate.toString()
+let ldate = 20240110
+console.log(convertDateToDayForm(ssdate))
+let datesarray = ['d20240101','d20240102','d20240103','d20240104','d20240105','d20240106','d20240107','d20240108','d20240109','d20240110']
+const query = "SELECT "+datesarray+" FROM attendence.attendence where admission_number = 1;"
+  
+  try {
+    const result = await queryAsync(query);
+    let rs1 = result[0]
+    res.send(rs1)
+    } catch (error) {
+      console.log(error);
+      return
+    }
+})
+
+
+
+
+
+
+
+
+
+
 // app.post('/convertmonthandyeartoprogress', async (req,res)=>{
 
 //   let month = req.body[0]
