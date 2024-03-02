@@ -7,7 +7,10 @@ const bodyparser = require("body-parser");
 app.use(bodyparser.urlencoded({extended:true}));
 app.use(bodyparser.json());
 var cors = require('cors');
-app.use(cors());
+app.use(cors({
+  origin:["http://192.168.100.3:3000","http://192.168.100.2:3000"]
+}
+));
 function convertDateToDayForm(dateString) {
   const year = dateString.slice(0, 4);
   const month = dateString.slice(4, 6);
@@ -361,7 +364,7 @@ app.post('/today-ict-strength', async (req,res)=>{
 
     try {
       const result = await queryAsync("SELECT count(admission_number) as strength FROM attendence.students;");
-      res.JSON(result[0])
+      res.send(result[0])
       } catch (error) {
         console.log(error);
       }
@@ -990,6 +993,18 @@ app.post('/get-special-sections',(req,res)=>{
   })
 
 
+
+  app.post('/view-attendance-page',(req,res)=>{
+    console.log(req.body)
+    const qry = ""
+      // mysql.query(qry, (error, result) => {
+      //   if (error){
+      //     res.send({error:true})
+      //   }else{
+      //     res.send(result)
+      //   }
+      // });
+    })
 
 
 // app.post('/convertmonthandyeartoprogress', async (req,res)=>{
