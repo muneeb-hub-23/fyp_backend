@@ -7,10 +7,7 @@ const bodyparser = require("body-parser");
 app.use(bodyparser.urlencoded({extended:true}));
 app.use(bodyparser.json());
 var cors = require('cors');
-app.use(cors({
-  origin:["http://192.168.100.3:3000","http://192.168.100.2:3000"]
-}
-));
+app.use(cors());
 function convertDateToDayForm(dateString) {
   const year = dateString.slice(0, 4);
   const month = dateString.slice(4, 6);
