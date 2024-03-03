@@ -204,11 +204,78 @@ app.post('/add-session',(req,res)=>{
     const data = await queryAsync("select * from attendence.sessiondates;")
     res.send(data)
   })
+  function convertDate(dateString) {
+    return dateString.replace(/-/g, '');
+  }
+  function getTodayDate() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+    const day = String(today.getDate()).padStart(2, '0');
+    
+    return `${year}${month}${day}`;
+  }
+  function getDatesInRange(startDateStr, endDateStr) {
+    const dates = [];
+    const startDate = new Date(startDateStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
+    const endDate = new Date(endDateStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
+  
+    for (let date = startDate; date <= endDate; date.setDate(date.getDate() + 1)) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      dates.push(`${year}${month}${day}`);
+    }
+  
+    return dates;
+  }
+  function countVariables(obj) {
+    return Object.keys(obj).length;
+  }
 
+  app.post('/get-total-days',async (req,res)=>{
+
+    const sdate = convertDate(req.body.sdate)
+    const ldate = convertDate(req.body.ldate)
+    const stuadn = req.body.stuadn
+    const darray = getDatesInRange(sdate,ldate)
+    const data = await queryAsync("select * from attendence.attendence;")
+    const data1 = data[0]
+    let counter = countVariables(data1)
+    counter = counter-1
+    var rightarray1 = []
+    var rightarray = 'admission_number,'
+    for(var i=0; i<darray.length; i++){
+      tester = darray[i]
+      if(data1['d'+tester] === undefined){
+        
+      }
+      else{
+        rightarray+=('d'+tester+',')
+        rightarray1.push('d'+tester)
+      }
+    }
+    rightarray = rightarray.slice(0,-1)
+    const updateddata =await queryAsync("select "+rightarray+" from attendence.attendence where admission_number = '"+stuadn+"';")
+    var attendancearray = []
+    for(var i=0; i<counter; i++){
+      let hel = updateddata[0]
+      let pel = rightarray1[i]
+      attendancearray.push(hel[pel])
+    }
+    const totalp = countOccurrences(attendancearray, 'p');
+    const totala = countOccurrences(attendancearray, 'a');
+    const totall = countOccurrences(attendancearray, 'l');
+    const totallt = countOccurrences(attendancearray, 'lt');
+
+    console.log(totalp,totala,totall,totallt)
+    console.log(counter)
+
+    res.send(data1)
+  })
 
 
 app.post('/get-students-list', (req, res) => {
-console.log(req.body)
   let qry = ("SELECT * FROM attendence.students Where (class = '"+req.body.class1+"' and section = '"+req.body.section1+"');");
   mysql.query(qry, (error, results) => {
     if (error) {
