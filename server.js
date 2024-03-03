@@ -1,13 +1,14 @@
 const express = require("express");
 const app = express();
 const mysql = require("./connector").con
-const port = 80;
+const port = 8000;
 const axios = require("axios")
 const bodyparser = require("body-parser");
 app.use(bodyparser.urlencoded({extended:true}));
 app.use(bodyparser.json());
 var cors = require('cors');
 app.use(cors());
+
 function convertDateToDayForm(dateString) {
   const year = dateString.slice(0, 4);
   const month = dateString.slice(4, 6);
@@ -358,7 +359,7 @@ console.log(error);
 res.send(present)
 });
 app.post('/today-ict-strength', async (req,res)=>{
-
+console.log(req.body)
     try {
       const result = await queryAsync("SELECT count(admission_number) as strength FROM attendence.students;");
       res.send(result[0])
@@ -469,9 +470,10 @@ responseArray.push([strength,present,absent,leave,lates])
 res.send(responseArray)
 })
 app.post('/dashboard-chart-expanded', async (req,res)=>{
+  
   const responseArray = [];
-  const class1 = req.body[0]
-  const section = req.body[1]
+  const class1 = req.body.classn
+  const section = req.body.section
   for(var m=0; m<1; m++){
     var strength=0;
     var present=0;
