@@ -232,7 +232,12 @@ app.post('/add-session',(req,res)=>{
   function countVariables(obj) {
     return Object.keys(obj).length;
   }
-
+  function formatDate(dateString) {
+    const date = new Date(dateString.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
+    const options = { day: 'numeric', month: 'long', year: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+  }
+  
   app.post('/get-total-days',async (req,res)=>{
 
     const sdate = convertDate(req.body.sdate)
@@ -241,8 +246,7 @@ app.post('/add-session',(req,res)=>{
     const darray = getDatesInRange(sdate,ldate)
     const data = await queryAsync("select * from attendence.attendence;")
     const data1 = data[0]
-    let counter = countVariables(data1)
-    counter = counter-1
+  
     var rightarray1 = []
     var rightarray = 'admission_number,'
     for(var i=0; i<darray.length; i++){
@@ -258,7 +262,7 @@ app.post('/add-session',(req,res)=>{
     rightarray = rightarray.slice(0,-1)
     const updateddata =await queryAsync("select "+rightarray+" from attendence.attendence where admission_number = '"+stuadn+"';")
     var attendancearray = []
-    for(var i=0; i<counter; i++){
+    for(var i=0; i<rightarray1.length; i++){
       let hel = updateddata[0]
       let pel = rightarray1[i]
       attendancearray.push(hel[pel])
@@ -267,11 +271,29 @@ app.post('/add-session',(req,res)=>{
     const totala = countOccurrences(attendancearray, 'a');
     const totall = countOccurrences(attendancearray, 'l');
     const totallt = countOccurrences(attendancearray, 'lt');
+    var firstwarning='Expecting';
+    var secondwarning='Expecting';
+    var thirdwarning='Expecting';
+    var x = 0;
+    for(var i=0; i<rightarray1.length; i++){
 
-    console.log(totalp,totala,totall,totallt)
-    console.log(counter)
+      if(attendancearray[i]==='a'){
+        x++
+        if(x===10){
+          firstwarning = formatDate(rightarray1[i].slice(1))
+        }else if(x===20){
+          secondwarning = formatDate(rightarray1[i].slice(1))
+        }else if(x===30){
+          thirdwarning = formatDate(rightarray1[i].slice(1))
+        }
 
-    res.send(data1)
+      }
+
+
+    }
+    const counter = rightarray1.length
+
+    res.send({totaldays:counter,totalp,totala,totall,totallt,firstwarning,secondwarning,thirdwarning})
   })
 
 
