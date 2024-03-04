@@ -448,7 +448,6 @@ console.log(error);
 res.send(present)
 });
 app.post('/today-ict-strength', async (req,res)=>{
-console.log(req.body)
     try {
       const result = await queryAsync("SELECT count(admission_number) as strength FROM attendence.students;");
       res.send(result[0])
@@ -610,7 +609,6 @@ app.post('/dashboard-chart-expanded', async (req,res)=>{
 app.post('/student-is-listing', async (req,res)=>{
   const class1 = req.body.class1
   const section = req.body.section1
-  console.log(class1,section)
   const query = "SELECT s.admission_number,s.roll_no,s.student_full_name,(d"+getCurrentDate()+") As status1 FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+class1+"' AND s.section = '"+section+"'"
   try {
     const result = await queryAsync(query);
@@ -620,35 +618,30 @@ app.post('/student-is-listing', async (req,res)=>{
       return
     }
 });
-function countConsecutiveAs(arr) {
+async function countConsecutiveAs(arr,dayss) {
   let result = [];
   let count = 0;
 
   for (let i = 0; i < arr.length; i++) {
     
-    if (arr[i] === 'a' & count<6) {
+    if (arr[i] === 'a' & count<5) {
       count++;
-    } else {
-      if (count > 0) {
-        result.push(count);
-      }
-      count = 0;
+    }else{
+      count = 0
     }
-  }
+    if (count === 5 & dayss[i] === 'Friday'){
+      result.push(count)
+      count = 0
+    }
 
-  // If 'a' is at the end of the array
-  if (count > 0) {
-    result.push(count);
+    }
+    return result
   }
-
-  return result;
-}
 app.post('/fines', async (req, res) => {
   try {
     const { sdate, ldate, admission_number } = req.body;
 
     const data = await queryAsync(`SELECT * FROM attendence.attendence WHERE admission_number = ${admission_number}`);
-
     const datess = [];
     const dayss = [];
     const attendance = [];
@@ -688,7 +681,7 @@ app.post('/fines', async (req, res) => {
       }
     }
 
-    const consectivedays = countConsecutiveAs(attendance);
+    const consectivedays =await countConsecutiveAs(attendance,dayss);
 
     for (let x = 0; x < consectivedays.length; x++) {
       if (consectivedays[x] === 5) {
@@ -708,7 +701,7 @@ app.post('/allfines', async (req, res) => {
     let students = req.body.students;
     let sdate = req.body.sdate;
     let ldate = req.body.ldate;
-    const apiUrl = 'http://localhost:80/fines';
+    const apiUrl = 'http://localhost:8000/fines';
 
     for (var i = 0; i < students.length; i++) {
       let postData = {
@@ -739,60 +732,24 @@ app.post('/allfines', async (req, res) => {
     console.log(err);
   }
 });
+function getDayName(inputDate) {
+  // Extract year, month, and day from the inputDate string
+  const year = inputDate.slice(1, 5);
+  const month = inputDate.slice(5, 7) - 1; // Month is zero-based in JavaScript Date object
+  const day = inputDate.slice(7, 9);
 
-app.post('/detailedfines', async (req,res) => {
-function getYesterdayIfToday(dateStr) {
-    // Get today's date
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth() + 1; // Month is zero-based, so add 1
-    const day = today.getDate();
+  // Create a new Date object with the extracted year, month, and day
+  const dateObj = new Date(year, month, day);
 
-    // Convert today's date to string format YYYYMMDD
-    const todayStr = `${year}${month.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`;
+  // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+  const dayIndex = dateObj.getDay();
 
-    // Compare the input date with today's date
-    if (dateStr === todayStr) {
-        // If input date is today, decrement it by one day to get yesterday's date
-        const inputDate = new Date(year, month - 1, day);
-        inputDate.setDate(inputDate.getDate() - 1);
+  // Define an array of day names
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-        // Format yesterday's date as YYYYMMDD
-        const yearYesterday = inputDate.getFullYear();
-        const monthYesterday = (inputDate.getMonth() + 1).toString().padStart(2, '0');
-        const dayYesterday = inputDate.getDate().toString().padStart(2, '0');
-        return `${yearYesterday}${monthYesterday}${dayYesterday}`;
-    } else {
-        // If input date is not today, return it as is
-        return dateStr;
-    }
+  // Return the day name corresponding to the dayIndex
+  return dayNames[dayIndex];
 }
-var responseArray = []
-let {admission_number,sdate,ldate} = req.body
-ldate = getYesterdayIfToday(ldate.toString());
-
-  async function generateDateRange(startDate, endDate) {
-    let matcher = await queryAsync('select * from attendence.attendence')
-    let matcher1 = matcher[0]
-    console.log(matcher1)
-    let dateArray = '';
-    const start = new Date(startDate.substring(0, 4), parseInt(startDate.substring(4, 6)) - 1, startDate.substring(6, 8));
-    const end = new Date(endDate.substring(0, 4), parseInt(endDate.substring(4, 6)) - 1, endDate.substring(6, 8));
-
-    for (let date = start; date <= end; date.setDate(date.getDate() + 1)) {
-
-      let mydate = ('d'+date.getFullYear() + '' + ('0' + (date.getMonth() + 1)).slice(-2) + '' + ('0' + date.getDate()).slice(-2))+',';
-      let test = matcher1[mydate.slice(0, -1)]
-      if(typeof test === 'undefined'){
-       console.log('undefined')
-      }else{
-        dateArray= dateArray+mydate
-      }
-    }
-
-    return dateArray.slice(0, -1) ;
-}
-
 function generateDateRangea(startDate, endDate) {
   let dateArray = [];
   const start = new Date(startDate.substring(0, 4), parseInt(startDate.substring(4, 6)) - 1, startDate.substring(6, 8));
@@ -821,16 +778,72 @@ function formatDate(dateStr) {
 
   return `${day}-${monthName}-${year}`;
 }
+function getYesterdayIfToday(dateStr) {
+  // Get today's date
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1; // Month is zero-based, so add 1
+  const day = today.getDate();
+
+  // Convert today's date to string format YYYYMMDD
+  const todayStr = `${year}${month.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`;
+
+  // Compare the input date with today's date
+  if (dateStr === todayStr) {
+      // If input date is today, decrement it by one day to get yesterday's date
+      const inputDate = new Date(year, month - 1, day);
+      inputDate.setDate(inputDate.getDate() - 1);
+
+      // Format yesterday's date as YYYYMMDD
+      const yearYesterday = inputDate.getFullYear();
+      const monthYesterday = (inputDate.getMonth() + 1).toString().padStart(2, '0');
+      const dayYesterday = inputDate.getDate().toString().padStart(2, '0');
+      return `${yearYesterday}${monthYesterday}${dayYesterday}`;
+  } else {
+      // If input date is not today, return it as is
+      return dateStr;
+  }
+}
+async function generateDateRange(startDate, endDate) {
+  let matcher = await queryAsync('select * from attendence.attendence')
+  let matcher1 = matcher[0]
+  console.log(matcher1)
+  let dateArray = '';
+  const start = new Date(startDate.substring(0, 4), parseInt(startDate.substring(4, 6)) - 1, startDate.substring(6, 8));
+  const end = new Date(endDate.substring(0, 4), parseInt(endDate.substring(4, 6)) - 1, endDate.substring(6, 8));
+
+  for (let date = start; date <= end; date.setDate(date.getDate() + 1)) {
+
+    let mydate = ('d'+date.getFullYear() + '' + ('0' + (date.getMonth() + 1)).slice(-2) + '' + ('0' + date.getDate()).slice(-2))+',';
+    let test = matcher1[mydate.slice(0, -1)]
+    if(typeof test === 'undefined'){
+     console.log('undefined')
+    }else{
+      dateArray= dateArray+mydate
+    }
+  }
+
+  return dateArray.slice(0, -1) ;
+}
+
+app.post('/detailedfines', async (req,res) => {
+
+var responseArray = []
+let {admission_number,sdate,ldate} = req.body
+ldate = getYesterdayIfToday(ldate.toString());
 let master = await generateDateRange(sdate.toString(),ldate.toString())
 let query = "SELECT "+master+" FROM attendence.attendence where admission_number = "+admission_number+";"
 const data = await queryAsync(query)
 const datesArray = generateDateRangea(sdate.toString(),ldate.toString())
 const dayNames = getDayNames(generateDateRangea(sdate.toString(),ldate.toString()))
 var consectiveFine = 0
+
 for(var cnt = 0; cnt<datesArray.length; cnt++){
+
 let abc = data[0]
 let dil = datesArray[cnt]
 let fine = 0;
+
 if(abc[dil] === 'a' & dayNames[cnt] === 'Monday' | abc[dil] === 'a' & dayNames[cnt] === 'Friday'){
   fine+=100
 }else if(abc[dil] === 'a' & dayNames[cnt] === 'Tuesday' | abc[dil] === 'a' & dayNames[cnt] === 'Wednesday' | abc[dil] === 'a' & dayNames[cnt] === 'Thursday'){
@@ -856,13 +869,20 @@ else if(abc[dil] === 'l'){
 else if(abc[dil] === 'lt'){
   responseArray.push({date:formatDate(datesArray[cnt]),day:dayNames[cnt],status:"Late",fine:fine})
 }
+
+const dday = getDayName(datesArray[cnt])
+
 if(abc[dil] === 'a' & consectiveFine < 5){
+
   consectiveFine++
-  if(consectiveFine === 5){
-    consectiveFine = 0
-    responseArray.push({date:formatDate(datesArray[cnt]),day:dayNames[cnt],status:"Consective 5 Absent",fine:150})
-  
-  }
+}else{
+  consectiveFine = 0
+}
+
+if(consectiveFine === 5 & dday === 'Friday'){
+  consectiveFine = 0
+  responseArray.push({date:formatDate(datesArray[cnt]),day:dayNames[cnt],status:"Consective 5 Absent",fine:150})
+
 }
 
   
