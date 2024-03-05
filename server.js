@@ -1102,18 +1102,53 @@ app.post('/get-special-sections',(req,res)=>{
 
 
 
-  app.post('/view-attendance-page',(req,res)=>{
-    console.log(req.body)
-    const qry = ""
-      // mysql.query(qry, (error, result) => {
-      //   if (error){
-      //     res.send({error:true})
-      //   }else{
-      //     res.send(result)
-      //   }
-      // });
-    })
-
+app.post('/department-report',(req,res)=>{
+console.log(req.body)
+res.send({
+helo:'true'
+})
+const qry = ""
+// mysql.query(qry, (error, result) => {
+//   if (error){
+//     res.send({error:true})
+//   }else{
+//     res.send(result)
+//   }
+// });
+})
+app.post('/weekly-department-report',(req,res)=>{
+console.log(req.body)
+const qry = ""
+// mysql.query(qry, (error, result) => {
+//   if (error){
+//     res.send({error:true})
+//   }else{
+//     res.send(result)
+//   }
+// });
+})
+app.post('/monthly-department-report',(req,res)=>{
+console.log(req.body)
+const qry = ""
+// mysql.query(qry, (error, result) => {
+//   if (error){
+//     res.send({error:true})
+//   }else{
+//     res.send(result)
+//   }
+// });
+})
+app.post('/yearly-department-report',(req,res)=>{
+console.log(req.body)
+const qry = ""
+// mysql.query(qry, (error, result) => {
+//   if (error){
+//     res.send({error:true})
+//   }else{
+//     res.send(result)
+//   }
+// });
+})
 
 // app.post('/convertmonthandyeartoprogress', async (req,res)=>{
 
