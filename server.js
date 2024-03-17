@@ -1344,31 +1344,43 @@ if(crietaria==='daily'){
   })
 
 }else if(crietaria==='monthly'){
+
   const upnp = await groupDatesIntoMonths(labels)
+ 
   var ulabels = []
   var upresentd = []
   var uabsentd = []
   var uleaved = []
   var ulated = []
   for(var i=0; i<upnp.length; i++){
+
     ulabels.push("Month "+(i+1).toString())
+
     var alpha = upnp[i]
+    
     var p=0
     var a=0
     var l=0
     var lt=0
-    for(var l=0; l<alpha.length; l++){
-      var test = alpha[l]
+ 
+    
+    for(var nn=0; nn<alpha.length; nn++){
+
+      var test = alpha[nn]
+ 
       p = p+presentd[test]
       a = a+absentd[test]
       l = l+leaved[test]
       lt = lt+lated[test]
+
     }
+
     upresentd.push(Math.floor((p/alpha.length)))
     uabsentd.push(Math.floor((a/alpha.length)))
     uleaved.push(Math.floor((l/alpha.length)))
     ulated.push(Math.floor((lt/alpha.length)))
   }
+
   res.send({
    
     tstr:result.length,
@@ -1382,9 +1394,10 @@ if(crietaria==='daily'){
     leaved:uleaved,
     lated:ulated
   })
+
 }else if(crietaria==='yearly'){
 
-  const upnp = await groupDatesIntoMonths(labels)
+  const upnp = await groupDatesIntoYears(labels)
   var ulabels = []
   var upresentd = []
   var uabsentd = []
@@ -1397,17 +1410,17 @@ if(crietaria==='daily'){
     var a=0
     var l=0
     var lt=0
-    for(var l=0; l<alpha.length; l++){
-      var test = alpha[l]
+    for(var nn=0; nn<alpha.length; nn++){
+      var test = alpha[nn]
       p = p+presentd[test]
       a = a+absentd[test]
       l = l+leaved[test]
       lt = lt+lated[test]
     }
-    upresentd.push(p/alpha.length)
-    uabsentd.push(a/alpha.length)
-    uleaved.push(l/alpha.length)
-    ulated.push(lt/alpha.length)
+    upresentd.push(Math.round(p/alpha.length))
+    uabsentd.push(Math.round(a/alpha.length))
+    uleaved.push(Math.round(l/alpha.length))
+    ulated.push(Math.round(lt/alpha.length))
   }
   res.send({
    
