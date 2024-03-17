@@ -1288,6 +1288,7 @@ for(var i=0; i<perdateans.length; i++){
 }
 
 if(crietaria==='daily'){
+
   res.send({
     perdateans,
     tstr:result.length,
@@ -1363,10 +1364,10 @@ if(crietaria==='daily'){
       l = l+leaved[test]
       lt = lt+lated[test]
     }
-    upresentd.push(p/alpha.length)
-    uabsentd.push(a/alpha.length)
-    uleaved.push(l/alpha.length)
-    ulated.push(lt/alpha.length)
+    upresentd.push(Math.floor((p/alpha.length)))
+    uabsentd.push(Math.floor((a/alpha.length)))
+    uleaved.push(Math.floor((l/alpha.length)))
+    ulated.push(Math.floor((lt/alpha.length)))
   }
   res.send({
    
