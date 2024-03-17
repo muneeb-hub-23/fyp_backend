@@ -1100,114 +1100,334 @@ app.post('/get-special-sections',(req,res)=>{
     });
   })
 
+function formatDatex(dateString) {
+    const year = dateString.substring(1, 5);
+    const month = dateString.substring(5, 7);
+    const day = dateString.substring(7, 9);
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthName = months[parseInt(month, 10) - 1];
+
+    return `${day}-${monthName}-${year}`;
+}
+function groupDatesIntoWeeks(dates) {
+  // Convert dates to JavaScript Date objects
+  const dateObjects = dates.map(dateString => new Date(dateString));
+
+  const weeks = [];
+  let currentWeek = [];
+  let weekStartIndex = 0;
+
+  for (let i = 0; i < dateObjects.length; i++) {
+      const currentDate = dateObjects[i];
+      const currentDay = currentDate.getDay();
+
+      // Skip weekends
+      if (currentDay === 0 || currentDay === 6) {
+          continue;
+      }
+
+      // If it's a new week, add the previous week to the weeks array
+      if (currentDay === 1 || i === 0) {
+          if (currentWeek.length > 0) {
+              weeks.push(currentWeek);
+          }
+          currentWeek = [];
+          weekStartIndex = i;
+      }
+
+      // Add the index of the date to the current week
+      currentWeek.push(i);
+  }
+
+  // Add the last week if it's not empty
+  if (currentWeek.length > 0) {
+      weeks.push(currentWeek);
+  }
+
+  return weeks;
+}
+function groupDatesIntoMonths(dates) {
+  // Convert dates to JavaScript Date objects
+  const dateObjects = dates.map(dateString => new Date(dateString));
+
+  const months = [];
+  let currentMonth = [];
+  let monthStartIndex = 0;
+
+  for (let i = 0; i < dateObjects.length; i++) {
+      const currentDate = dateObjects[i];
+      const currentMonthValue = currentDate.getMonth();
+
+      // If it's a new month, add the previous month to the months array
+      if (currentMonthValue !== dateObjects[monthStartIndex].getMonth() || i === 0) {
+          if (currentMonth.length > 0) {
+              months.push(currentMonth);
+          }
+          currentMonth = [];
+          monthStartIndex = i;
+      }
+
+      // Add the index of the date to the current month
+      currentMonth.push(i);
+  }
+
+  // Add the last month if it's not empty
+  if (currentMonth.length > 0) {
+      months.push(currentMonth);
+  }
+
+  return months;
+}
+function groupDatesIntoYears(dates) {
+  // Convert dates to JavaScript Date objects
+  const dateObjects = dates.map(dateString => new Date(dateString));
+
+  const years = [];
+  let currentYear = [];
+  let yearStartIndex = 0;
+
+  for (let i = 0; i < dateObjects.length; i++) {
+      const currentDate = dateObjects[i];
+      const currentYearValue = currentDate.getFullYear();
+
+      // If it's a new year, add the previous year to the years array
+      if (currentYearValue !== dateObjects[yearStartIndex].getFullYear() || i === 0) {
+          if (currentYear.length > 0) {
+              years.push(currentYear);
+          }
+          currentYear = [];
+          yearStartIndex = i;
+      }
+
+      // Add the index of the date to the current year
+      currentYear.push(i);
+  }
+
+  // Add the last year if it's not empty
+  if (currentYear.length > 0) {
+      years.push(currentYear);
+  }
+
+  return years;
+}
+app.post('/department-report', async (req,res)=>{
+const {crietaria,duration,dates} = req.body
+const qry = "SELECT * FROM attendence.attendence;"
+const match = await queryAsync(qry)
+var newqry = "admission_number,"
+var newqryarray = []
+var perdateans = []
+var labels = []
+var presentd = []
+var absentd = []
+var leaved = []
+var lated = []
+
+for(var i=0; i<dates.length; i++){
+  const mc = match[0]
+  const tc = dates[i]
+  if(mc[tc] === undefined){
+
+  }else{
+  newqry = newqry +tc+ ","
+  newqryarray.push(tc)
+  labels.push(formatDatex(tc))
+  }
+}
+newqry = newqry.slice(0,-1)
+newqry = "Select "+newqry+" FROM attendence.attendence;"
+const result =await queryAsync(newqry)
+var countpresentindate = 0
+var countabsentindate = 0
+var countleaveindate = 0
+var countlateindate = 0
+var countpresentindate1 = 0
+var countabsentindate1 = 0
+var countleaveindate1 = 0
+var countlateindate1 = 0
+for(var t=0; t<newqryarray.length; t++){
+
+  for(var i=0; i<result.length; i++){
+    const ree = result[i]
+    const eee = newqryarray[t]
+
+    if(ree[eee]==='p'){
+        countpresentindate++
+        countpresentindate1++
+    }else if(ree[eee]==='a'){
+        countabsentindate++
+        countabsentindate1++
+    }else if(ree[eee]==='l'){
+        countleaveindate++
+        countleaveindate1++
+    }else if(ree[eee]==='lt'){
+        countlateindate++
+        countlateindate1++
+    }
+  }
+  perdateans.push({countpresentindate,countabsentindate,countleaveindate,countlateindate})
+    countpresentindate = 0
+    countabsentindate = 0
+    countleaveindate = 0
+    countlateindate = 0
+}
+const total = countpresentindate1+countabsentindate1+countleaveindate1+countlateindate1
+
+for(var i=0; i<perdateans.length; i++){
+
+  const total = perdateans[i].countpresentindate+perdateans[i].countabsentindate+perdateans[i].countleaveindate+perdateans[i].countlateindate
+  presentd.push(Math.round((perdateans[i].countpresentindate*100)/total))
+  absentd.push(Math.round((perdateans[i].countabsentindate*100)/total))
+  leaved.push(Math.round((perdateans[i].countleaveindate*100)/total))
+  lated.push(Math.round((perdateans[i].countlateindate*100)/total))
 
 
-app.post('/department-report',(req,res)=>{
-console.log(req.body)
-res.send({
-helo:'true'
-})
-const qry = ""
-// mysql.query(qry, (error, result) => {
-//   if (error){
-//     res.send({error:true})
-//   }else{
-//     res.send(result)
-//   }
-// });
-})
-app.post('/weekly-department-report',(req,res)=>{
-console.log(req.body)
-const qry = ""
-// mysql.query(qry, (error, result) => {
-//   if (error){
-//     res.send({error:true})
-//   }else{
-//     res.send(result)
-//   }
-// });
-})
-app.post('/monthly-department-report',(req,res)=>{
-console.log(req.body)
-const qry = ""
-// mysql.query(qry, (error, result) => {
-//   if (error){
-//     res.send({error:true})
-//   }else{
-//     res.send(result)
-//   }
-// });
-})
-app.post('/yearly-department-report',(req,res)=>{
-console.log(req.body)
-const qry = ""
-// mysql.query(qry, (error, result) => {
-//   if (error){
-//     res.send({error:true})
-//   }else{
-//     res.send(result)
-//   }
-// });
-})
 
-// app.post('/convertmonthandyeartoprogress', async (req,res)=>{
 
-//   let month = req.body[0]
-//   let year = req.body[1]
-//   const monthNumber = getMonthNumber(month);
-//   const dates = getDatesArray(month, year)
-//   const responseArray = [[],[],[],[],[],[]];
-//   const firstDate = formatDateString(year+month+dates[0])
-//   const lastDate = formatDateString(year+month+dates.slice(-1))
-//   const firstdatealter = dates[0]
-//   const lastdatealter = dates.slice(-1)
-//   const lastDate1 = lastdatealter+1;
-//   const classSections = [
-//     { class: '1st-year', section: 'a' },
-//     { class: '1st-year', section: 'b' },
-//     { class: '2nd-year', section: 'a' },
-//     { class: '2nd-year', section: 'b' },
-//     { class: '3rd-year', section: 'a' },
-//     { class: '3rd-year', section: 'b' }
-//   ];
+}
 
-// for(var x = firstdatealter; x<=lastdatealter; x++){
-// var xa = x
+if(crietaria==='daily'){
+  res.send({
+    perdateans,
+    tstr:result.length,
+    tp:Math.round((countpresentindate1*100)/total),
+    ta:Math.round((countabsentindate1*100)/total),
+    tl:Math.round((countleaveindate1*100)/total),
+    tlt:Math.round((countlateindate1*100)/total),
+    labels,
+    presentd,
+    absentd,
+    leaved,
+    lated
+  })
+}else if(crietaria==='weekly'){
+  const upnp = await groupDatesIntoWeeks(labels)
+  var ulabels = []
+  var upresentd = []
+  var uabsentd = []
+  var uleaved = []
+  var ulated = []
+  for(var i=0; i<upnp.length; i++){
+    ulabels.push("Week "+(i+1).toString())
+    var alpha = upnp[i]
+    var p=0
+    var a=0
+    var l=0
+    var lt=0
+    for(var l=0; l<alpha.length; l++){
+      var test = alpha[l]
+      p = p+presentd[test]
+      a = a+absentd[test]
+      l = l+leaved[test]
+      lt = lt+lated[test]
+    }
+    upresentd.push(p/alpha.length)
+    uabsentd.push(a/alpha.length)
+    uleaved.push(l/alpha.length)
+    ulated.push(lt/alpha.length)
+  }
 
-// for(var m=0; m<6; m++){
-// var strength=0;
-// var present=0;
-
-//   try {
-//     const result = await queryAsync("select admission_number,class,section,count(admission_number) as strength from students where class = '"+classSections[m].class+"' and section='"+classSections[m].section+"';");
-//     strength=result[0].strength
-//     } catch (error) {
-//       console.log(error);
-//     }
-//     try {
-//       const result = await queryAsync("SELECT s.admission_number,d"+year+getMonthNumber(month)+dates[x-1]+",COUNT(a.d"+year+getMonthNumber(month)+dates[x-1]+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+classSections[m].class+"' AND s.section = '"+classSections[m].section+"' AND a.d"+year+getMonthNumber(month)+dates[x-1]+" = 'p';");
-//       present=result[0].count_of_present
-  
-
-//       } catch (error) {
-//         console.log(error);
-//       }
+  res.send({
    
+    tstr:result.length,
+    tp:Math.round((countpresentindate1*100)/total),
+    ta:Math.round((countabsentindate1*100)/total),
+    tl:Math.round((countleaveindate1*100)/total),
+    tlt:Math.round((countlateindate1*100)/total),
+    labels:ulabels,
+    presentd:upresentd,
+    absentd:uabsentd,
+    leaved:uleaved,
+    lated:ulated
+  })
+
+}else if(crietaria==='monthly'){
+  const upnp = await groupDatesIntoMonths(labels)
+  var ulabels = []
+  var upresentd = []
+  var uabsentd = []
+  var uleaved = []
+  var ulated = []
+  for(var i=0; i<upnp.length; i++){
+    ulabels.push("Month "+(i+1).toString())
+    var alpha = upnp[i]
+    var p=0
+    var a=0
+    var l=0
+    var lt=0
+    for(var l=0; l<alpha.length; l++){
+      var test = alpha[l]
+      p = p+presentd[test]
+      a = a+absentd[test]
+      l = l+leaved[test]
+      lt = lt+lated[test]
+    }
+    upresentd.push(p/alpha.length)
+    uabsentd.push(a/alpha.length)
+    uleaved.push(l/alpha.length)
+    ulated.push(lt/alpha.length)
+  }
+  res.send({
+   
+    tstr:result.length,
+    tp:Math.round((countpresentindate1*100)/total),
+    ta:Math.round((countabsentindate1*100)/total),
+    tl:Math.round((countleaveindate1*100)/total),
+    tlt:Math.round((countlateindate1*100)/total),
+    labels:ulabels,
+    presentd:upresentd,
+    absentd:uabsentd,
+    leaved:uleaved,
+    lated:ulated
+  })
+}else if(crietaria==='yearly'){
+
+  const upnp = await groupDatesIntoMonths(labels)
+  var ulabels = []
+  var upresentd = []
+  var uabsentd = []
+  var uleaved = []
+  var ulated = []
+  for(var i=0; i<upnp.length; i++){
+    ulabels.push("Year"+(i+1).toString())
+    var alpha = upnp[i]
+    var p=0
+    var a=0
+    var l=0
+    var lt=0
+    for(var l=0; l<alpha.length; l++){
+      var test = alpha[l]
+      p = p+presentd[test]
+      a = a+absentd[test]
+      l = l+leaved[test]
+      lt = lt+lated[test]
+    }
+    upresentd.push(p/alpha.length)
+    uabsentd.push(a/alpha.length)
+    uleaved.push(l/alpha.length)
+    ulated.push(lt/alpha.length)
+  }
+  res.send({
+   
+    tstr:result.length,
+    tp:Math.round((countpresentindate1*100)/total),
+    ta:Math.round((countabsentindate1*100)/total),
+    tl:Math.round((countleaveindate1*100)/total),
+    tlt:Math.round((countlateindate1*100)/total),
+    labels:ulabels,
+    presentd:upresentd,
+    absentd:uabsentd,
+    leaved:uleaved,
+    lated:ulated
+  })
+}
 
 
-// var final = (present*100)/strength
-// responseArray[m].push(final)
 
-//   }
-// }
+})
 
 
-
-
-
-// res.send(responseArray)
-
-// });
 
 
 app.listen(port,function(){
