@@ -232,12 +232,8 @@ app.post('/add-session',(req,res)=>{
   function countVariables(obj) {
     return Object.keys(obj).length;
   }
-  function formatDate(dateString) {
-    const date = new Date(dateString.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
-    const options = { day: 'numeric', month: 'long', year: 'numeric' };
-    return date.toLocaleDateString('en-US', options);
-  }
-  
+
+
   app.post('/get-total-days',async (req,res)=>{
 
     const sdate = convertDate(req.body.sdate)
@@ -275,16 +271,41 @@ app.post('/add-session',(req,res)=>{
     var secondwarning='Expecting';
     var thirdwarning='Expecting';
     var x = 0;
+    async function formatDateabc(inputDate) {
+      // Extract year, month, and day from the input string
+      const year = inputDate.slice(0, 4);
+      const month = inputDate.slice(4, 6);
+      const day = inputDate.slice(6, 8);
+    
+      // Create an array of month names
+      const monthNames = [
+          "January", "February", "March", "April", "May", "June",
+          "July", "August", "September", "October", "November", "December"
+      ];
+    
+      // Get the month name based on the month value (subtract 1 since months are zero-indexed)
+      const formattedMonth = monthNames[parseInt(month, 10) - 1];
+    
+      // Construct the final formatted date
+      const formattedDate = `${day}-${formattedMonth}-${year}`;
+      return formattedDate.toString();
+    }
     for(var i=0; i<rightarray1.length; i++){
 
       if(attendancearray[i]==='a'){
         x++
         if(x===10){
-          firstwarning = formatDate(rightarray1[i].slice(1))
+          firstwarning = rightarray1[i].slice(1)
+          const dsfj = await formatDateabc(firstwarning)
+          firstwarning = dsfj
         }else if(x===20){
-          secondwarning = formatDate(rightarray1[i].slice(1))
+          secondwarning = rightarray1[i].slice(1)
+          const dsfj = await formatDateabc(secondwarning)
+          secondwarning = dsfj
         }else if(x===30){
-          thirdwarning = formatDate(rightarray1[i].slice(1))
+          thirdwarning = rightarray1[i].slice(1)
+          const dsfj = await formatDateabc(thirdwarning)
+          thirdwarning = dsfj
         }
 
       }
@@ -292,7 +313,7 @@ app.post('/add-session',(req,res)=>{
 
     }
     const counter = rightarray1.length
-
+    
     res.send({totaldays:counter,totalp,totala,totall,totallt,firstwarning,secondwarning,thirdwarning})
   })
 
@@ -1910,7 +1931,14 @@ var newqry = "attendence.admission_number,"
 
 })
 
+app.post('/warning-letters', async (req,res)=>{
+  const {classn,section,sessiont} = req.body
+  const qry1 = ""
 
+
+  res.send({classn,section,sessiont})
+
+})
 
 app.listen(port,function(){
   console.log("server is up");
