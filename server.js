@@ -1440,7 +1440,6 @@ if(crietaria==='daily'){
 
 
 })
-
 app.post('/class-report', async (req,res)=>{
   const {crietaria,duration,dates,classn,section} = req.body
 
@@ -1675,7 +1674,241 @@ app.post('/class-report', async (req,res)=>{
   
   
   
-  })
+})
+
+
+app.post('/student-report', async (req,res)=>{
+
+const {admission_number,dates,crietaria} = req.body
+
+const qry = "SELECT * FROM students JOIN attendence ON students.admission_number = attendence.admission_number where attendence.admission_number = '"+admission_number+"';"
+const match = await queryAsync(qry)
+var newqry = "attendence.admission_number,"
+  var newqryarray = []
+  var perdateans = []
+  var labels = []
+  var presentd = []
+  var absentd = []
+  var leaved = []
+  var lated = []
+  var totaldays = 0
+  for(var i=0; i<dates.length; i++){
+
+    const mc = match[0]
+    const tc = dates[i]
+    if(mc[tc] === undefined){
+  
+    }else{
+    totaldays++
+    newqry = newqry +'attendence.'+tc+ ","
+    newqryarray.push(tc)
+    labels.push(formatDatex(tc))
+    }
+  }
+  newqry = newqry.slice(0,-1)
+  newqry = "SELECT "+newqry+" FROM students JOIN attendence ON students.admission_number = attendence.admission_number where attendence.admission_number = '"+admission_number+"';"
+  const result =await queryAsync(newqry)
+  var countpresentindate = 0
+  var countabsentindate = 0
+  var countleaveindate = 0
+  var countlateindate = 0
+  var countpresentindate1 = 0
+  var countabsentindate1 = 0
+  var countleaveindate1 = 0
+  var countlateindate1 = 0
+  for(var t=0; t<newqryarray.length; t++){
+  
+    for(var i=0; i<result.length; i++){
+      const ree = result[i]
+      const eee = newqryarray[t]
+  
+      if(ree[eee]==='p'){
+          countpresentindate++
+          countpresentindate1++
+      }else if(ree[eee]==='a'){
+          countabsentindate++
+          countabsentindate1++
+      }else if(ree[eee]==='l'){
+          countleaveindate++
+          countleaveindate1++
+      }else if(ree[eee]==='lt'){
+          countlateindate++
+          countlateindate1++
+      }
+    }
+    perdateans.push({countpresentindate,countabsentindate,countleaveindate,countlateindate})
+      countpresentindate = 0
+      countabsentindate = 0
+      countleaveindate = 0
+      countlateindate = 0
+  }
+  const total = countpresentindate1+countabsentindate1+countleaveindate1+countlateindate1
+  
+  for(var i=0; i<perdateans.length; i++){
+  
+    const total = perdateans[i].countpresentindate+perdateans[i].countabsentindate+perdateans[i].countleaveindate+perdateans[i].countlateindate
+    presentd.push(Math.round((perdateans[i].countpresentindate*100)/total))
+    absentd.push(Math.round((perdateans[i].countabsentindate*100)/total))
+    leaved.push(Math.round((perdateans[i].countleaveindate*100)/total))
+    lated.push(Math.round((perdateans[i].countlateindate*100)/total))
+  
+  
+  
+  
+  }
+  
+  if(crietaria==='daily'){
+  
+    res.send({
+      perdateans,
+      tstr:totaldays,
+      tp:Math.round((countpresentindate1*100)/total),
+      ta:Math.round((countabsentindate1*100)/total),
+      tl:Math.round((countleaveindate1*100)/total),
+      tlt:Math.round((countlateindate1*100)/total),
+      labels,
+      presentd,
+      absentd,
+      leaved,
+      lated
+    })
+  }else if(crietaria==='weekly'){
+    const upnp = await groupDatesIntoWeeks(labels)
+    var ulabels = []
+    var upresentd = []
+    var uabsentd = []
+    var uleaved = []
+    var ulated = []
+    for(var i=0; i<upnp.length; i++){
+      ulabels.push("Week "+(i+1).toString())
+      var alpha = upnp[i]
+      var p=0
+      var a=0
+      var l=0
+      var lt=0
+      for(var l=0; l<alpha.length; l++){
+        var test = alpha[l]
+        p = p+presentd[test]
+        a = a+absentd[test]
+        l = l+leaved[test]
+        lt = lt+lated[test]
+      }
+      upresentd.push(p/alpha.length)
+      uabsentd.push(a/alpha.length)
+      uleaved.push(l/alpha.length)
+      ulated.push(lt/alpha.length)
+    }
+  
+    res.send({
+     
+      tstr:totaldays,
+      tp:Math.round((countpresentindate1*100)/total),
+      ta:Math.round((countabsentindate1*100)/total),
+      tl:Math.round((countleaveindate1*100)/total),
+      tlt:Math.round((countlateindate1*100)/total),
+      labels:ulabels,
+      presentd:upresentd,
+      absentd:uabsentd,
+      leaved:uleaved,
+      lated:ulated
+    })
+  
+  }else if(crietaria==='monthly'){
+  
+    const upnp = await groupDatesIntoMonths(labels)
+   
+    var ulabels = []
+    var upresentd = []
+    var uabsentd = []
+    var uleaved = []
+    var ulated = []
+    for(var i=0; i<upnp.length; i++){
+  
+      ulabels.push("Month "+(i+1).toString())
+  
+      var alpha = upnp[i]
+      
+      var p=0
+      var a=0
+      var l=0
+      var lt=0
+   
+      
+      for(var nn=0; nn<alpha.length; nn++){
+  
+        var test = alpha[nn]
+   
+        p = p+presentd[test]
+        a = a+absentd[test]
+        l = l+leaved[test]
+        lt = lt+lated[test]
+  
+      }
+  
+      upresentd.push(Math.floor((p/alpha.length)))
+      uabsentd.push(Math.floor((a/alpha.length)))
+      uleaved.push(Math.floor((l/alpha.length)))
+      ulated.push(Math.floor((lt/alpha.length)))
+    }
+  
+    res.send({
+     
+      tstr:totaldays,
+      tp:Math.round((countpresentindate1*100)/total),
+      ta:Math.round((countabsentindate1*100)/total),
+      tl:Math.round((countleaveindate1*100)/total),
+      tlt:Math.round((countlateindate1*100)/total),
+      labels:ulabels,
+      presentd:upresentd,
+      absentd:uabsentd,
+      leaved:uleaved,
+      lated:ulated
+    })
+  
+  }else if(crietaria==='yearly'){
+  
+    const upnp = await groupDatesIntoYears(labels)
+    var ulabels = []
+    var upresentd = []
+    var uabsentd = []
+    var uleaved = []
+    var ulated = []
+    for(var i=0; i<upnp.length; i++){
+      ulabels.push("Year"+(i+1).toString())
+      var alpha = upnp[i]
+      var p=0
+      var a=0
+      var l=0
+      var lt=0
+      for(var nn=0; nn<alpha.length; nn++){
+        var test = alpha[nn]
+        p = p+presentd[test]
+        a = a+absentd[test]
+        l = l+leaved[test]
+        lt = lt+lated[test]
+      }
+      upresentd.push(Math.round(p/alpha.length))
+      uabsentd.push(Math.round(a/alpha.length))
+      uleaved.push(Math.round(l/alpha.length))
+      ulated.push(Math.round(lt/alpha.length))
+    }
+    res.send({
+     
+      tstr:totaldays,
+      tp:Math.round((countpresentindate1*100)/total),
+      ta:Math.round((countabsentindate1*100)/total),
+      tl:Math.round((countleaveindate1*100)/total),
+      tlt:Math.round((countlateindate1*100)/total),
+      labels:ulabels,
+      presentd:upresentd,
+      absentd:uabsentd,
+      leaved:uleaved,
+      lated:ulated
+    })
+  }
+
+
+})
 
 
 
