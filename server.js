@@ -81,7 +81,7 @@ function getMonthNumber(month) {
 function queryAsync(sql) {
   return new Promise((resolve, reject) => {
     mysql.query(sql, (error, result) => {
-      if (error) reject(error);
+      if (error) {console.log(err)}
       else resolve(result);
     });
   });
@@ -142,9 +142,6 @@ let query3 = ("INSERT INTO `attendence`.`fine` (`admission_number`) VALUES ('"+p
 
 
 });
-
-
-
 app.post('/add-blocked-date',(req,res)=>{
 const query = "INSERT INTO `attendence`.`offdates` (`date`, `comment`) VALUES ('"+req.body.date+"', '"+req.body.comment+"');"
 mysql.query(query,(err,result)=>{
@@ -175,11 +172,20 @@ app.post('/get-blocked-dates',async (req,res)=>{
   }
   res.send({resdates,data})
 })
-
-
 app.post('/add-session',(req,res)=>{
-  const {selectedYear,sdate,edate} = req.body
-  const query = "INSERT INTO `attendence`.`sessiondates` (`session`, `startdate`, `enddate`) VALUES ('"+selectedYear+"', '"+sdate+"', '"+edate+"');"
+const {selectedYear,sdate,edate} = req.body
+const query = "INSERT INTO `attendence`.`sessiondates` (`session`, `startdate`, `enddate`) VALUES ('"+selectedYear+"', '"+sdate+"', '"+edate+"');"
+mysql.query(query,(err,result)=>{
+  if(err){
+    console.log(err)
+    res.send({error:true})
+  }else{
+    res.send({error:false})
+  }
+})
+})
+app.post('/delete-session',(req,res)=>{
+  const query = "DELETE FROM `attendence`.`sessiondates` WHERE (`idsessiondates` = '"+req.body.sid+"');"
   mysql.query(query,(err,result)=>{
     if(err){
       console.log(err)
@@ -188,136 +194,121 @@ app.post('/add-session',(req,res)=>{
       res.send({error:false})
     }
   })
-  })
-  app.post('/delete-session',(req,res)=>{
-    const query = "DELETE FROM `attendence`.`sessiondates` WHERE (`idsessiondates` = '"+req.body.sid+"');"
-    mysql.query(query,(err,result)=>{
-      if(err){
-        console.log(err)
-        res.send({error:true})
-      }else{
-        res.send({error:false})
-      }
-    })
-  })
-  app.post('/get-sessions',async (req,res)=>{
-    const data = await queryAsync("select * from attendence.sessiondates;")
-    res.send(data)
-  })
-  function convertDate(dateString) {
-    return dateString.replace(/-/g, '');
-  }
-  function getTodayDate() {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are zero-based
-    const day = String(today.getDate()).padStart(2, '0');
-    
-    return `${year}${month}${day}`;
-  }
-  function getDatesInRange(startDateStr, endDateStr) {
-    const dates = [];
-    const startDate = new Date(startDateStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
-    const endDate = new Date(endDateStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
+})
+app.post('/get-sessions',async (req,res)=>{
+  const data = await queryAsync("select * from attendence.sessiondates;")
+  res.send(data)
+})
+function convertDate(dateString) {
+  return dateString.replace(/-/g, '');
+}
+function getTodayDate() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+  const day = String(today.getDate()).padStart(2, '0');
   
-    for (let date = startDate; date <= endDate; date.setDate(date.getDate() + 1)) {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      dates.push(`${year}${month}${day}`);
-    }
-  
-    return dates;
+  return `${year}${month}${day}`;
+}
+function getDatesInRange(startDateStr, endDateStr) {
+  const dates = [];
+  const startDate = new Date(startDateStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
+  const endDate = new Date(endDateStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
+
+  for (let date = startDate; date <= endDate; date.setDate(date.getDate() + 1)) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    dates.push(`${year}${month}${day}`);
   }
-  function countVariables(obj) {
-    return Object.keys(obj).length;
+
+  return dates;
+}
+function countVariables(obj) {
+  return Object.keys(obj).length;
+}
+app.post('/get-total-days',async (req,res)=>{
+
+  const sdate = convertDate(req.body.sdate)
+  const ldate = convertDate(req.body.ldate)
+  const stuadn = req.body.stuadn
+  const darray = getDatesInRange(sdate,ldate)
+  const data = await queryAsync("select * from attendence.attendence;")
+  const data1 = data[0]
+
+  var rightarray1 = []
+  var rightarray = 'admission_number,'
+  for(var i=0; i<darray.length; i++){
+    tester = darray[i]
+    if(data1['d'+tester] === undefined){
+      
+    }
+    else{
+      rightarray+=('d'+tester+',')
+      rightarray1.push('d'+tester)
+    }
   }
-
-
-  app.post('/get-total-days',async (req,res)=>{
-
-    const sdate = convertDate(req.body.sdate)
-    const ldate = convertDate(req.body.ldate)
-    const stuadn = req.body.stuadn
-    const darray = getDatesInRange(sdate,ldate)
-    const data = await queryAsync("select * from attendence.attendence;")
-    const data1 = data[0]
+  rightarray = rightarray.slice(0,-1)
+  const updateddata =await queryAsync("select "+rightarray+" from attendence.attendence where admission_number = '"+stuadn+"';")
+  var attendancearray = []
+  for(var i=0; i<rightarray1.length; i++){
+    let hel = updateddata[0]
+    let pel = rightarray1[i]
+    attendancearray.push(hel[pel])
+  }
+  const totalp = countOccurrences(attendancearray, 'p');
+  const totala = countOccurrences(attendancearray, 'a');
+  const totall = countOccurrences(attendancearray, 'l');
+  const totallt = countOccurrences(attendancearray, 'lt');
+  var firstwarning='Expecting';
+  var secondwarning='Expecting';
+  var thirdwarning='Expecting';
+  var x = 0;
+  async function formatDateabc(inputDate) {
+    // Extract year, month, and day from the input string
+    const year = inputDate.slice(0, 4);
+    const month = inputDate.slice(4, 6);
+    const day = inputDate.slice(6, 8);
   
-    var rightarray1 = []
-    var rightarray = 'admission_number,'
-    for(var i=0; i<darray.length; i++){
-      tester = darray[i]
-      if(data1['d'+tester] === undefined){
-        
-      }
-      else{
-        rightarray+=('d'+tester+',')
-        rightarray1.push('d'+tester)
-      }
-    }
-    rightarray = rightarray.slice(0,-1)
-    const updateddata =await queryAsync("select "+rightarray+" from attendence.attendence where admission_number = '"+stuadn+"';")
-    var attendancearray = []
-    for(var i=0; i<rightarray1.length; i++){
-      let hel = updateddata[0]
-      let pel = rightarray1[i]
-      attendancearray.push(hel[pel])
-    }
-    const totalp = countOccurrences(attendancearray, 'p');
-    const totala = countOccurrences(attendancearray, 'a');
-    const totall = countOccurrences(attendancearray, 'l');
-    const totallt = countOccurrences(attendancearray, 'lt');
-    var firstwarning='Expecting';
-    var secondwarning='Expecting';
-    var thirdwarning='Expecting';
-    var x = 0;
-    async function formatDateabc(inputDate) {
-      // Extract year, month, and day from the input string
-      const year = inputDate.slice(0, 4);
-      const month = inputDate.slice(4, 6);
-      const day = inputDate.slice(6, 8);
-    
-      // Create an array of month names
-      const monthNames = [
-          "January", "February", "March", "April", "May", "June",
-          "July", "August", "September", "October", "November", "December"
-      ];
-    
-      // Get the month name based on the month value (subtract 1 since months are zero-indexed)
-      const formattedMonth = monthNames[parseInt(month, 10) - 1];
-    
-      // Construct the final formatted date
-      const formattedDate = `${day}-${formattedMonth}-${year}`;
-      return formattedDate.toString();
-    }
-    for(var i=0; i<rightarray1.length; i++){
+    // Create an array of month names
+    const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+  
+    // Get the month name based on the month value (subtract 1 since months are zero-indexed)
+    const formattedMonth = monthNames[parseInt(month, 10) - 1];
+  
+    // Construct the final formatted date
+    const formattedDate = `${day}-${formattedMonth}-${year}`;
+    return formattedDate.toString();
+  }
+  for(var i=0; i<rightarray1.length; i++){
 
-      if(attendancearray[i]==='a'){
-        x++
-        if(x===10){
-          firstwarning = rightarray1[i].slice(1)
-          const dsfj = await formatDateabc(firstwarning)
-          firstwarning = dsfj
-        }else if(x===20){
-          secondwarning = rightarray1[i].slice(1)
-          const dsfj = await formatDateabc(secondwarning)
-          secondwarning = dsfj
-        }else if(x===30){
-          thirdwarning = rightarray1[i].slice(1)
-          const dsfj = await formatDateabc(thirdwarning)
-          thirdwarning = dsfj
-        }
-
+    if(attendancearray[i]==='a'){
+      x++
+      if(x===10){
+        firstwarning = rightarray1[i].slice(1)
+        const dsfj = await formatDateabc(firstwarning)
+        firstwarning = dsfj
+      }else if(x===20){
+        secondwarning = rightarray1[i].slice(1)
+        const dsfj = await formatDateabc(secondwarning)
+        secondwarning = dsfj
+      }else if(x===30){
+        thirdwarning = rightarray1[i].slice(1)
+        const dsfj = await formatDateabc(thirdwarning)
+        thirdwarning = dsfj
       }
 
-
     }
-    const counter = rightarray1.length
-    
-    res.send({totaldays:counter,totalp,totala,totall,totallt,firstwarning,secondwarning,thirdwarning})
-  })
 
 
+  }
+  const counter = rightarray1.length
+  
+  res.send({totaldays:counter,totalp,totala,totall,totallt,firstwarning,secondwarning,thirdwarning})
+})
 app.post('/get-students-list', (req, res) => {
   let qry = ("SELECT * FROM attendence.students Where (class = '"+req.body.class1+"' and section = '"+req.body.section1+"');");
   mysql.query(qry, (error, results) => {
@@ -647,9 +638,10 @@ async function countConsecutiveAs(arr,dayss) {
     
     if (arr[i] === 'a' & count<5) {
       count++;
-    }else{
+    }else if(arr[i] === 'p' | arr[i] === 'l' | arr[i] === 'lt'){
       count = 0
     }
+
     if (count === 5 & dayss[i] === 'Friday'){
       result.push(count)
       count = 0
@@ -828,7 +820,6 @@ function getYesterdayIfToday(dateStr) {
 async function generateDateRange(startDate, endDate) {
   let matcher = await queryAsync('select * from attendence.attendence')
   let matcher1 = matcher[0]
-  console.log(matcher1)
   let dateArray = '';
   const start = new Date(startDate.substring(0, 4), parseInt(startDate.substring(4, 6)) - 1, startDate.substring(6, 8));
   const end = new Date(endDate.substring(0, 4), parseInt(endDate.substring(4, 6)) - 1, endDate.substring(6, 8));
@@ -846,7 +837,6 @@ async function generateDateRange(startDate, endDate) {
 
   return dateArray.slice(0, -1) ;
 }
-
 app.post('/detailedfines', async (req,res) => {
 
 var responseArray = []
@@ -879,7 +869,7 @@ if(abc[dil] === 'a' & dayNames[cnt] === 'Monday' | abc[dil] === 'a' & dayNames[c
 responseArray.push({date:formatDate(datesArray[cnt]),day:dayNames[cnt],status:'Regular Absent',fine:fine})
 
 }else if(dayNames[cnt] === 'Saturday' | dayNames[cnt] === 'Sunday'){
-console.log('holiday no listing')
+// console.log('holiday no listing')
 }
 else if(abc[dil] === 'p'){
   responseArray.push({date:formatDate(datesArray[cnt]),day:dayNames[cnt],status:"Present",fine:fine})
@@ -894,9 +884,8 @@ else if(abc[dil] === 'lt'){
 const dday = getDayName(datesArray[cnt])
 
 if(abc[dil] === 'a' & consectiveFine < 5){
-
   consectiveFine++
-}else{
+}else if(abc[dil] === 'p' | abc[dil] === 'l' | abc[dil] === 'lt'){
   consectiveFine = 0
 }
 
@@ -906,17 +895,11 @@ if(consectiveFine === 5 & dday === 'Friday'){
 
 }
 
-  
-
-
-
 }
 
 res.send(responseArray)
 
 })
-
-
 app.post('/get-classes', async (req,res) => {
 let query = "Select classes from attendence.classes";
 const response = await queryAsync(query)
@@ -933,62 +916,53 @@ app.post('/get-shifts',async (req,res) => {
   let query = "Select shifts from attendence.shifts";
   const response = await queryAsync(query)
 res.send(response)})
+app.post('/add-new-class',async (req,res) => {
 
-  app.post('/add-new-class',async (req,res) => {
-    console.log(req.body)
-    const query = "INSERT INTO `attendence`.`classes` (`classes`) VALUES ('"+req.body.newclass+"');"
-    const result = await queryAsync(query)
-    res.send(result)
-  })
+  const query = "INSERT INTO `attendence`.`classes` (`classes`) VALUES ('"+req.body.newclass+"');"
+  const result = await queryAsync(query)
+  res.send(result)
+})
+app.post('/delete-that-class',async (req,res) => {
 
-  app.post('/delete-that-class',async (req,res) => {
+  const query = "DELETE FROM `attendence`.`classes` WHERE (`classes` = '"+req.body.deleteclass+"');"
+  const result = await queryAsync(query)
+  res.send(result)
 
-    const query = "DELETE FROM `attendence`.`classes` WHERE (`classes` = '"+req.body.deleteclass+"');"
-    const result = await queryAsync(query)
-    res.send(result)
+})
+app.post('/add-new-section',async (req,res) => {
+  const query = "INSERT INTO `attendence`.`sections` (`sections`) VALUES ('"+req.body.newsection+"');"
+  const result = await queryAsync(query)
+  res.send(result)
+})
+app.post('/delete-that-section',async (req,res) => {
 
-  })
+  const query = "DELETE FROM `attendence`.`sections` WHERE (`sections` = '"+req.body.deletesection+"');"
+  const result = await queryAsync(query)
+  res.send(result)
 
-  app.post('/add-new-section',async (req,res) => {
-    const query = "INSERT INTO `attendence`.`sections` (`sections`) VALUES ('"+req.body.newsection+"');"
-    const result = await queryAsync(query)
-    res.send(result)
-  })
+})
+app.post('/add-new-department',async (req,res) => {
+  const query = "INSERT INTO `attendence`.`departments` (`department`) VALUES ('"+req.body.newdepartment+"');"
+  const result = await queryAsync(query)
+  res.send(result)
+})
+app.post('/delete-that-department',async (req,res) => {
 
-  app.post('/delete-that-section',async (req,res) => {
+  const query = "DELETE FROM `attendence`.`departments` WHERE (`department` = '"+req.body.deletedepartment+"');"
+  const result = await queryAsync(query)
+  res.send(result)
 
-    const query = "DELETE FROM `attendence`.`sections` WHERE (`sections` = '"+req.body.deletesection+"');"
-    const result = await queryAsync(query)
-    res.send(result)
-
-  })
-
-  app.post('/add-new-department',async (req,res) => {
-    const query = "INSERT INTO `attendence`.`departments` (`department`) VALUES ('"+req.body.newdepartment+"');"
-    const result = await queryAsync(query)
-    res.send(result)
-  })
-
-  app.post('/delete-that-department',async (req,res) => {
-
-    const query = "DELETE FROM `attendence`.`departments` WHERE (`department` = '"+req.body.deletedepartment+"');"
-    const result = await queryAsync(query)
-    res.send(result)
-
-  })
-
-  app.post('/add-new-shift',async (req,res) => {
-    const query = "INSERT INTO `attendence`.`shifts` (`shifts`) VALUES ('"+req.body.newshift+"');"
-    const result = await queryAsync(query)
-    res.send(result)
-  })
-
-  app.post('/delete-that-shift',async (req,res) => {
-    const query = "DELETE FROM `attendence`.`shifts` WHERE (`shifts` = '"+req.body.deleteshift+"');"
-    const result = await queryAsync(query)
-    res.send(result)
-  })
-
+})
+app.post('/add-new-shift',async (req,res) => {
+  const query = "INSERT INTO `attendence`.`shifts` (`shifts`) VALUES ('"+req.body.newshift+"');"
+  const result = await queryAsync(query)
+  res.send(result)
+})
+app.post('/delete-that-shift',async (req,res) => {
+  const query = "DELETE FROM `attendence`.`shifts` WHERE (`shifts` = '"+req.body.deleteshift+"');"
+  const result = await queryAsync(query)
+  res.send(result)
+})
 app.post('/add-user', async (req,res)=>{
   let userdata = req.body.userdata
   let permissions = req.body.permissionsarray
@@ -1010,12 +984,10 @@ app.post('/add-user', async (req,res)=>{
   });
 
 })
-
 app.post('/modify-user', async (req,res)=>{
   let employee = req.body.employee
   let permissions = req.body.upstate
 
-console.log(employee,permissions)
 let qry1 = "UPDATE `attendence`.`employees` SET `employee_full_name` = '"+employee.employee_full_name+"', `employee_mobile_number` = '"+employee.employee_mobile_number+"', `father_full_name` = '"+employee.father_full_name+"', `father_mobile_number` = '"+employee.father_mobile_number+"', `joining_date` = '"+employee.joining_date+"', `email` = '"+employee.email+"', `cnic` = '"+employee.cnic+"', `password` = '"+employee.password+"' WHERE (`employee_number` = '"+employee.employee_number+"');"
 let qry2 = "DELETE FROM attendence.permissions where employee_number = '"+employee.employee_number+"';" 
 
@@ -1041,7 +1013,6 @@ mysql.query(qry1, (error, result) => {
     }});
 
 })
-
 app.post('/match-user',async (req,res)=>{
   let data =await queryAsync("SELECT employee_number,password FROM attendence.employees where employee_number='"+req.body.userName+"';")
   if(data.length === 0){
@@ -1050,7 +1021,6 @@ app.post('/match-user',async (req,res)=>{
   res.send(data[0])
   }
 })
-
 app.post('/get-permissions',async (req,res)=>{
   var data = []
   var responsearray = []
@@ -1064,7 +1034,6 @@ app.post('/get-permissions',async (req,res)=>{
   }
   res.send(responsearray)
 })
-
 app.post('/assign-classes',async (req,res)=>{
   const data = req.body.selectedValue
   const qry = "INSERT INTO `attendence`.`classpermissions` (`employee_number`, `class`, `section`) VALUES ('"+data.employee_number+"', '"+data.classn+"', '"+data.section+"');"
@@ -1087,8 +1056,6 @@ app.post('/get-assigned-classes',async (req,res)=>{
     }
   });
 })
-
-
 app.post('/delete-class-permission',async (req,res)=>{
   const qry = "DELETE FROM `attendence`.`classpermissions` WHERE (`idclasspermissions` = '"+req.body.data+"');"
   mysql.query(qry, (error, result) => {
@@ -1099,7 +1066,6 @@ app.post('/delete-class-permission',async (req,res)=>{
     }
   });
 })
-
 app.post('/get-special-classes',(req,res)=>{
 const qry = "SELECT * FROM attendence.classpermissions where employee_number = '"+req.body.number+"';"
   mysql.query(qry, (error, result) => {
@@ -1119,8 +1085,7 @@ app.post('/get-special-sections',(req,res)=>{
         res.send(result)
       }
     });
-  })
-
+})
 function formatDatex(dateString) {
     const year = dateString.substring(1, 5);
     const month = dateString.substring(5, 7);
@@ -1482,7 +1447,7 @@ app.post('/class-report', async (req,res)=>{
     if(mc[tc] === undefined){
   
     }else{
-      console.log('its defined')
+
     newqry = newqry +'attendence.'+tc+ ","
     newqryarray.push(tc)
     labels.push(formatDatex(tc))
@@ -1696,8 +1661,6 @@ app.post('/class-report', async (req,res)=>{
   
   
 })
-
-
 app.post('/student-report', async (req,res)=>{
 
 const {admission_number,dates,crietaria} = req.body
@@ -1929,6 +1892,90 @@ var newqry = "attendence.admission_number,"
   }
 
 
+})
+function convertDateFormatzx(dateString) {
+  // Split the input date string by '-'
+  const parts = dateString.split('-');
+  
+  // Reconstruct the date in 'yyyymmdd' format
+  const formattedDate = `${parts[0]}${parts[1].padStart(2, '0')}${parts[2].padStart(2, '0')}`;
+  
+  return formattedDate;
+}
+
+app.post('/get-warning-letters',async (req,res)=>{
+  const {classn,section,session} = req.body
+  const dates = await queryAsync("select * from attendence.sessiondates where session = '"+session+"';")
+  const dates1 = dates[0]
+  var sdate = await convertDateFormatzx(dates1.startdate)
+  var ldate = await convertDateFormatzx(dates1.enddate)
+  sdate = convertDate(sdate)
+  ldate = convertDate(ldate)
+  const students = await queryAsync("select * from attendence.students where class = '"+classn+"' and section = '"+section+"';")
+  var warningletters = []
+  const darray = getDatesInRange(sdate,ldate)
+  const data = await queryAsync("select * from attendence.attendence;")
+  const data1 = data[0]
+  
+  const warnings = await queryAsync("SELECT * FROM attendence.warningletters;")
+
+  for(var iii=0; iii<students.length; iii++){
+
+    const stuadn = students[iii].admission_number;
+    var rightarray1 = []
+    var rightarray = 'admission_number,'
+    for(var i=0; i<darray.length; i++){
+      tester = darray[i]
+      if(data1['d'+tester] === undefined){
+        
+      }
+      else{
+        rightarray+=('d'+tester+',')
+        rightarray1.push('d'+tester)
+      }
+    }
+    rightarray = rightarray.slice(0,-1)
+    const updateddata =await queryAsync("select "+rightarray+" from attendence.attendence where admission_number = '"+stuadn+"';")
+    var attendancearray = []
+    for(var i=0; i<rightarray1.length; i++){
+      let hel = updateddata[0]
+      let pel = rightarray1[i]
+      attendancearray.push(hel[pel])
+    }
+    const total = countOccurrences(attendancearray, 'a');
+    var checked = 'pending'
+    if(total>9){
+
+      var datapush = {name:students[iii].student_full_name,admission_number:students[iii].admission_number,roll_no:students[iii].roll_no,absent_count:total,warningtype:'First',warning_status:checked}
+      for(var t=0; t<warnings.length; t++){
+        if(warnings[t].roll_no === datapush.roll_no & warnings[t].warning_type === datapush.warningtype){
+          checked = 'dispatched'
+        }
+      }
+      warningletters.push(datapush)
+    }
+    if(total>19){
+      var datapush = {name:students[iii].student_full_name,admission_number:students[iii].admission_number,roll_no:students[iii].roll_no,absent_count:total,warningtype:'Second',warning_status:checked}
+      for(var t=0; t<warnings.length; t++){
+        if(warnings[t].roll_no === datapush.roll_no & warnings[t].warning_type === datapush.warningtype){
+          checked = 'dispatched'
+        }
+      }
+      warningletters.push(datapush)
+    }
+    if(total>29){
+      var datapush = {name:students[iii].student_full_name,admission_number:students[iii].admission_number,roll_no:students[iii].roll_no,absent_count:total,warningtype:'Third',warning_status:checked}
+      for(var t=0; t<warnings.length; t++){
+        if(warnings[t].roll_no === datapush.roll_no & warnings[t].warning_type === datapush.warningtype){
+          checked = 'dispatched'
+        }
+      }
+      warningletters.push(datapush)
+    }
+
+  }
+  console.log(warningletters)
+  res.send(warningletters)
 })
 
 app.post('/warning-letters', async (req,res)=>{
