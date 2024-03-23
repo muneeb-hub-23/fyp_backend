@@ -390,7 +390,7 @@ let qry = "UPDATE `attendence`.`students` SET `roll_no` = '"+value.roll_no+"', `
 });
 app.post('/mark-attendance', async (req, res) => {
   res.send(JSON.stringify({value:true}))
-  let date = getCurrentDate();
+  let date = req.body.date;
   let admission_number = req.body.admission_number
   let status = req.body.status
   let qry1 = "UPDATE `attendence`.`attendence` SET `d"+date+"` = '"+status+"' WHERE (`admission_number` = '"+admission_number+"');"
@@ -745,6 +745,46 @@ app.post('/allfines', async (req, res) => {
     console.log(err);
   }
 });
+
+app.post('/classfines', async (req, res) => {
+console.log(req.body)
+  // try {
+  //   var dbi = [];
+  //   let students = req.body.students;
+  //   let sdate = req.body.sdate;
+  //   let ldate = req.body.ldate;
+  //   const apiUrl = 'http://localhost:8000/allfines';
+
+  //   for (var i = 0; i < students.length; i++) {
+  //     let postData = {
+  //       admission_number: students[i].admission_number,
+  //       sdate: sdate,
+  //       ldate: ldate,
+  //     };
+
+  //     try {
+  //       const response = await axios.post(apiUrl, postData, {
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           // Add any additional headers if needed
+  //         },
+  //       });
+
+  //       // Handle the successful response
+  //       dbi.push(response.data);
+  //       if (i+1 === students.length){
+  //       res.send(dbi);
+  //       }
+  //     } catch (error) {
+  //       // Handle errors
+  //       console.error('Error:', error.message);
+  //     }
+  //   }
+  // } catch (err) {
+  //   console.log(err);
+  // }
+});
+
 function getDayName(inputDate) {
   // Extract year, month, and day from the inputDate string
   const year = inputDate.slice(1, 5);
