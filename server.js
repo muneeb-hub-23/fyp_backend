@@ -9,6 +9,8 @@ app.use(bodyparser.json());
 var cors = require('cors');
 app.use(cors());
 
+
+
 function convertDateToDayForm(dateString) {
   const year = dateString.slice(0, 4);
   const month = dateString.slice(4, 6);
@@ -31,53 +33,6 @@ function convertDateFormat(inputDate) {
   const parts = inputDate.split('-');
   return parts[0] + parts[1] + parts[2];
 }
-function formatDateString(inputDate) {
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
-  const dateParts = inputDate.match(/^(\d{4})([a-zA-Z]+)(\d{2})$/);
-  if (!dateParts) {
-    console.error('Invalid date format. Please provide a valid input date.');
-    return null;
-  }
-
-  const year = dateParts[1];
-  const month = months.indexOf(dateParts[2]) + 1;
-  const day = dateParts[3];
-
-  if (month < 1 || month > 12) {
-    console.error('Invalid month. Please provide a valid month in the date.');
-    return null;
-  }
-
-  const formattedDate = `${year}${month.toString().padStart(2, '0')}${day}`;
-  return formattedDate;
-}
-function reverseDateFormat(inputDate) {
-  const year = inputDate.substring(0, 4);
-  const month = inputDate.substring(4, 6);
-  const day = inputDate.substring(6, 8);
-  return day + month + year;
-}
-function getMonthNumber(month) {
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
-  const monthIndex = monthNames.indexOf(month);
-  if (monthIndex === -1) {
-    console.error('Invalid month name. Please provide a valid month.');
-    return null;
-  }
-
-  // Adding 1 to make it one-based (January is 01)
-  const monthNumber = (monthIndex + 1).toString().padStart(2, '0');
-
-  return monthNumber;
-}
 function queryAsync(sql) {
   return new Promise((resolve, reject) => {
     mysql.query(sql, (error, result) => {
@@ -89,23 +44,341 @@ function queryAsync(sql) {
 function countOccurrences(array, value) {
   return Object.values(array).reduce((count, element) => count + (element === value ? 1 : 0), 0);
 }
-function getDatesArray(month, year) {
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
+function formatDatex(dateString) {
+  const year = dateString.substring(1, 5);
+  const month = dateString.substring(5, 7);
+  const day = dateString.substring(7, 9);
 
-  const monthIndex = monthNames.indexOf(month);
-  if (monthIndex === -1 || year < 1) {
-    console.error('hello Invalid input. Please provide a valid month and year.'+monthIndex);
-    return [];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthName = months[parseInt(month, 10) - 1];
+
+  return `${day}-${monthName}-${year}`;
+}
+function groupDatesIntoWeeks(dates) {
+// Convert dates to JavaScript Date objects
+const dateObjects = dates.map(dateString => new Date(dateString));
+
+const weeks = [];
+let currentWeek = [];
+let weekStartIndex = 0;
+
+for (let i = 0; i < dateObjects.length; i++) {
+    const currentDate = dateObjects[i];
+    const currentDay = currentDate.getDay();
+
+    // Skip weekends
+    if (currentDay === 0 || currentDay === 6) {
+        continue;
+    }
+
+    // If it's a new week, add the previous week to the weeks array
+    if (currentDay === 1 || i === 0) {
+        if (currentWeek.length > 0) {
+            weeks.push(currentWeek);
+        }
+        currentWeek = [];
+        weekStartIndex = i;
+    }
+
+    // Add the index of the date to the current week
+    currentWeek.push(i);
+}
+
+// Add the last week if it's not empty
+if (currentWeek.length > 0) {
+    weeks.push(currentWeek);
+}
+
+return weeks;
+}
+function groupDatesIntoMonths(dates) {
+// Convert dates to JavaScript Date objects
+const dateObjects = dates.map(dateString => new Date(dateString));
+
+const months = [];
+let currentMonth = [];
+let monthStartIndex = 0;
+
+for (let i = 0; i < dateObjects.length; i++) {
+    const currentDate = dateObjects[i];
+    const currentMonthValue = currentDate.getMonth();
+
+    // If it's a new month, add the previous month to the months array
+    if (currentMonthValue !== dateObjects[monthStartIndex].getMonth() || i === 0) {
+        if (currentMonth.length > 0) {
+            months.push(currentMonth);
+        }
+        currentMonth = [];
+        monthStartIndex = i;
+    }
+
+    // Add the index of the date to the current month
+    currentMonth.push(i);
+}
+
+// Add the last month if it's not empty
+if (currentMonth.length > 0) {
+    months.push(currentMonth);
+}
+
+return months;
+}
+function groupDatesIntoYears(dates) {
+// Convert dates to JavaScript Date objects
+const dateObjects = dates.map(dateString => new Date(dateString));
+
+const years = [];
+let currentYear = [];
+let yearStartIndex = 0;
+
+for (let i = 0; i < dateObjects.length; i++) {
+    const currentDate = dateObjects[i];
+    const currentYearValue = currentDate.getFullYear();
+
+    // If it's a new year, add the previous year to the years array
+    if (currentYearValue !== dateObjects[yearStartIndex].getFullYear() || i === 0) {
+        if (currentYear.length > 0) {
+            years.push(currentYear);
+        }
+        currentYear = [];
+        yearStartIndex = i;
+    }
+
+    // Add the index of the date to the current year
+    currentYear.push(i);
+}
+
+// Add the last year if it's not empty
+if (currentYear.length > 0) {
+    years.push(currentYear);
+}
+
+return years;
+}
+function convertDate(dateString) {
+  return dateString.replace(/-/g, '');
+}
+function convertDatex(dateString) {
+  // Extract the year, month, and day from the input date string
+  const year = dateString.slice(1, 5);
+  const month = dateString.slice(5, 7);
+  const day = dateString.slice(7);
+
+  // Concatenate the parts with dashes to get the desired format
+  const formattedDate = `${year}-${month}-${day}`;
+
+  return formattedDate;
+}
+function getDayOfWeek(dateString) {
+  // Extract the numeric part of the date string (e.g., "20240321" from "d20240321")
+  const numericDate = dateString.substring(1); // Remove the leading 'd'
+
+  // Parse the numeric date string into a Date object
+  const dateObj = new Date(numericDate.slice(0, 4), numericDate.slice(4, 6) - 1, numericDate.slice(6));
+
+  // Array of weekday names
+  const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  // Get the day of the week (0 for Sunday, 1 for Monday, etc.)
+  const dayIndex = dateObj.getDay();
+
+  // Return the corresponding day name from the array
+  return daysOfWeek[dayIndex];
+}
+function getDatesInRange(startDateStr, endDateStr) {
+  const dates = [];
+  const startDate = new Date(startDateStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
+  const endDate = new Date(endDateStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
+
+  for (let date = startDate; date <= endDate; date.setDate(date.getDate() + 1)) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    dates.push(`${year}${month}${day}`);
   }
 
-  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-  const datesArray = Array.from({ length: daysInMonth }, (_, index) => (index + 1).toString().padStart(2, '0'));
-
-  return datesArray;
+  return dates;
 }
+function countVariables(obj) {
+  return Object.keys(obj).length;
+}
+async function countConsecutiveAs(arr,dayss) {
+  let result = [];
+  let count = 0;
+
+  for (let i = 0; i < arr.length; i++) {
+    
+    if (arr[i] === 'a' & count<5) {
+      count++;
+    }else if(arr[i] === 'p' | arr[i] === 'l' | arr[i] === 'lt'){
+      count = 0
+    }
+
+    if (count === 5 & dayss[i] === 'Friday'){
+      result.push(count)
+      count = 0
+    }
+
+    }
+    return result
+}
+function getDayName(inputDate) {
+  // Extract year, month, and day from the inputDate string
+  const year = inputDate.slice(1, 5);
+  const month = inputDate.slice(5, 7) - 1; // Month is zero-based in JavaScript Date object
+  const day = inputDate.slice(7, 9);
+
+  // Create a new Date object with the extracted year, month, and day
+  const dateObj = new Date(year, month, day);
+
+  // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+  const dayIndex = dateObj.getDay();
+
+  // Define an array of day names
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  // Return the day name corresponding to the dayIndex
+  return dayNames[dayIndex];
+}
+function generateDateRangea(startDate, endDate) {
+  let dateArray = [];
+  const start = new Date(startDate.substring(0, 4), parseInt(startDate.substring(4, 6)) - 1, startDate.substring(6, 8));
+  const end = new Date(endDate.substring(0, 4), parseInt(endDate.substring(4, 6)) - 1, endDate.substring(6, 8));
+
+  for (let date = start; date <= end; date.setDate(date.getDate() + 1)) {
+      dateArray.push('d'+date.getFullYear() + '' + ('0' + (date.getMonth() + 1)).slice(-2) + '' + ('0' + date.getDate()).slice(-2));
+  }
+
+  return dateArray;
+}
+function getDayNames(dateArray) {
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  return dateArray.map(dateStr => {
+      const date = new Date(dateStr.substring(1, 5), parseInt(dateStr.substring(5, 7)) - 1, dateStr.substring(7, 9));
+      return dayNames[date.getDay()];
+  });
+}
+function formatDate(dateStr) {
+  const year = dateStr.substring(1, 5);
+  const month = dateStr.substring(5, 7);
+  const day = dateStr.substring(7, 9);
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthName = months[parseInt(month) - 1];
+
+  return `${day}-${monthName}-${year}`;
+}
+function getYesterdayIfToday(dateStr) {
+  // Get today's date
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1; // Month is zero-based, so add 1
+  const day = today.getDate();
+
+  // Convert today's date to string format YYYYMMDD
+  const todayStr = `${year}${month.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`;
+
+  // Compare the input date with today's date
+  if (dateStr === todayStr) {
+      // If input date is today, decrement it by one day to get yesterday's date
+      const inputDate = new Date(year, month - 1, day);
+      inputDate.setDate(inputDate.getDate() - 1);
+
+      // Format yesterday's date as YYYYMMDD
+      const yearYesterday = inputDate.getFullYear();
+      const monthYesterday = (inputDate.getMonth() + 1).toString().padStart(2, '0');
+      const dayYesterday = inputDate.getDate().toString().padStart(2, '0');
+      return `${yearYesterday}${monthYesterday}${dayYesterday}`;
+  } else {
+      // If input date is not today, return it as is
+      return dateStr;
+  }
+}
+async function generateDateRange(startDate, endDate) {
+  let matcher = await queryAsync('select * from attendence.attendence')
+  let matcher1 = matcher[0]
+  let dateArray = '';
+  const start = new Date(startDate.substring(0, 4), parseInt(startDate.substring(4, 6)) - 1, startDate.substring(6, 8));
+  const end = new Date(endDate.substring(0, 4), parseInt(endDate.substring(4, 6)) - 1, endDate.substring(6, 8));
+
+  for (let date = start; date <= end; date.setDate(date.getDate() + 1)) {
+
+    let mydate = ('d'+date.getFullYear() + '' + ('0' + (date.getMonth() + 1)).slice(-2) + '' + ('0' + date.getDate()).slice(-2))+',';
+    let test = matcher1[mydate.slice(0, -1)]
+    if(typeof test === 'undefined'){
+     console.log('undefined')
+    }else{
+      dateArray= dateArray+mydate
+    }
+  }
+
+  return dateArray.slice(0, -1) ;
+}
+function convertDateFormatzx(dateString) {
+  // Split the input date string by '-'
+  const parts = dateString.split('-');
+  
+  // Reconstruct the date in 'yyyymmdd' format
+  const formattedDate = `${parts[0]}${parts[1].padStart(2, '0')}${parts[2].padStart(2, '0')}`;
+  
+  return formattedDate;
+}
+const givemonth = (e) => {
+  switch(e){
+    case ('01'):
+    return('January')
+
+    case ('02'):
+    return('February')
+
+    case ('03'):
+    return('March')
+
+    case ('04'):
+    return('April')
+
+    case ('05'):
+    return('May')
+
+    case ('06'):
+    return('June')
+
+    case ('07'):
+    return('July')
+
+    case ('08'):
+    return('August')
+
+    case ('09'):
+    return('September')
+
+    case ('10'):
+    return('October')
+
+    case ('11'):
+    return('November')
+
+    case ('12'):
+    return('December')
+
+    default:
+    break;
+  }
+}
+function countOccurrenceszx(obj, valueToCount) {
+  let count = 0;
+
+  // Iterate over the object keys and check if the value matches the one to count
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key) && obj[key] === valueToCount) {
+      count++;
+    }
+  }
+
+  return count;
+}
+
+
 app.post('/add-student', (req, res) => {
 const props = req.body;
 
@@ -199,34 +472,6 @@ app.post('/get-sessions',async (req,res)=>{
   const data = await queryAsync("select * from attendence.sessiondates;")
   res.send(data)
 })
-function convertDate(dateString) {
-  return dateString.replace(/-/g, '');
-}
-function getTodayDate() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are zero-based
-  const day = String(today.getDate()).padStart(2, '0');
-  
-  return `${year}${month}${day}`;
-}
-function getDatesInRange(startDateStr, endDateStr) {
-  const dates = [];
-  const startDate = new Date(startDateStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
-  const endDate = new Date(endDateStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
-
-  for (let date = startDate; date <= endDate; date.setDate(date.getDate() + 1)) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    dates.push(`${year}${month}${day}`);
-  }
-
-  return dates;
-}
-function countVariables(obj) {
-  return Object.keys(obj).length;
-}
 app.post('/get-total-days',async (req,res)=>{
 
   const sdate = convertDate(req.body.sdate)
@@ -466,7 +711,7 @@ app.post('/today-ict-strength', async (req,res)=>{
       } catch (error) {
         console.log(error);
       }
-  })
+})
 app.post('/today-ict-present', async (req,res)=>{
 
 
@@ -630,26 +875,6 @@ app.post('/student-is-listing', async (req,res)=>{
       return
     }
 });
-async function countConsecutiveAs(arr,dayss) {
-  let result = [];
-  let count = 0;
-
-  for (let i = 0; i < arr.length; i++) {
-    
-    if (arr[i] === 'a' & count<5) {
-      count++;
-    }else if(arr[i] === 'p' | arr[i] === 'l' | arr[i] === 'lt'){
-      count = 0
-    }
-
-    if (count === 5 & dayss[i] === 'Friday'){
-      result.push(count)
-      count = 0
-    }
-
-    }
-    return result
-  }
 app.post('/fines', async (req, res) => {
   try {
     const { sdate, ldate, admission_number } = req.body;
@@ -745,7 +970,6 @@ app.post('/allfines', async (req, res) => {
     console.log(err);
   }
 });
-
 app.post('/classfines', async (req, res) => {
 console.log(req.body)
   // try {
@@ -784,99 +1008,6 @@ console.log(req.body)
   //   console.log(err);
   // }
 });
-
-function getDayName(inputDate) {
-  // Extract year, month, and day from the inputDate string
-  const year = inputDate.slice(1, 5);
-  const month = inputDate.slice(5, 7) - 1; // Month is zero-based in JavaScript Date object
-  const day = inputDate.slice(7, 9);
-
-  // Create a new Date object with the extracted year, month, and day
-  const dateObj = new Date(year, month, day);
-
-  // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
-  const dayIndex = dateObj.getDay();
-
-  // Define an array of day names
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-  // Return the day name corresponding to the dayIndex
-  return dayNames[dayIndex];
-}
-function generateDateRangea(startDate, endDate) {
-  let dateArray = [];
-  const start = new Date(startDate.substring(0, 4), parseInt(startDate.substring(4, 6)) - 1, startDate.substring(6, 8));
-  const end = new Date(endDate.substring(0, 4), parseInt(endDate.substring(4, 6)) - 1, endDate.substring(6, 8));
-
-  for (let date = start; date <= end; date.setDate(date.getDate() + 1)) {
-      dateArray.push('d'+date.getFullYear() + '' + ('0' + (date.getMonth() + 1)).slice(-2) + '' + ('0' + date.getDate()).slice(-2));
-  }
-
-  return dateArray;
-}
-function getDayNames(dateArray) {
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return dateArray.map(dateStr => {
-      const date = new Date(dateStr.substring(1, 5), parseInt(dateStr.substring(5, 7)) - 1, dateStr.substring(7, 9));
-      return dayNames[date.getDay()];
-  });
-}
-function formatDate(dateStr) {
-  const year = dateStr.substring(1, 5);
-  const month = dateStr.substring(5, 7);
-  const day = dateStr.substring(7, 9);
-
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const monthName = months[parseInt(month) - 1];
-
-  return `${day}-${monthName}-${year}`;
-}
-function getYesterdayIfToday(dateStr) {
-  // Get today's date
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth() + 1; // Month is zero-based, so add 1
-  const day = today.getDate();
-
-  // Convert today's date to string format YYYYMMDD
-  const todayStr = `${year}${month.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`;
-
-  // Compare the input date with today's date
-  if (dateStr === todayStr) {
-      // If input date is today, decrement it by one day to get yesterday's date
-      const inputDate = new Date(year, month - 1, day);
-      inputDate.setDate(inputDate.getDate() - 1);
-
-      // Format yesterday's date as YYYYMMDD
-      const yearYesterday = inputDate.getFullYear();
-      const monthYesterday = (inputDate.getMonth() + 1).toString().padStart(2, '0');
-      const dayYesterday = inputDate.getDate().toString().padStart(2, '0');
-      return `${yearYesterday}${monthYesterday}${dayYesterday}`;
-  } else {
-      // If input date is not today, return it as is
-      return dateStr;
-  }
-}
-async function generateDateRange(startDate, endDate) {
-  let matcher = await queryAsync('select * from attendence.attendence')
-  let matcher1 = matcher[0]
-  let dateArray = '';
-  const start = new Date(startDate.substring(0, 4), parseInt(startDate.substring(4, 6)) - 1, startDate.substring(6, 8));
-  const end = new Date(endDate.substring(0, 4), parseInt(endDate.substring(4, 6)) - 1, endDate.substring(6, 8));
-
-  for (let date = start; date <= end; date.setDate(date.getDate() + 1)) {
-
-    let mydate = ('d'+date.getFullYear() + '' + ('0' + (date.getMonth() + 1)).slice(-2) + '' + ('0' + date.getDate()).slice(-2))+',';
-    let test = matcher1[mydate.slice(0, -1)]
-    if(typeof test === 'undefined'){
-     console.log('undefined')
-    }else{
-      dateArray= dateArray+mydate
-    }
-  }
-
-  return dateArray.slice(0, -1) ;
-}
 app.post('/detailedfines', async (req,res) => {
 
 var responseArray = []
@@ -943,19 +1074,23 @@ res.send(responseArray)
 app.post('/get-classes', async (req,res) => {
 let query = "Select classes from attendence.classes";
 const response = await queryAsync(query)
-res.send(response)})
+res.send(response)
+})
 app.post('/get-sections',async (req,res) => {
   let query = "Select sections from attendence.sections";
   const response = await queryAsync(query)
-res.send(response)})
+res.send(response)
+})
 app.post('/get-departments',async (req,res) => {
   let query = "Select department from attendence.departments";
   const response = await queryAsync(query)
-res.send(response)})
+res.send(response)
+})
 app.post('/get-shifts',async (req,res) => {
   let query = "Select shifts from attendence.shifts";
   const response = await queryAsync(query)
-res.send(response)})
+res.send(response)
+})
 app.post('/add-new-class',async (req,res) => {
 
   const query = "INSERT INTO `attendence`.`classes` (`classes`) VALUES ('"+req.body.newclass+"');"
@@ -1126,117 +1261,6 @@ app.post('/get-special-sections',(req,res)=>{
       }
     });
 })
-function formatDatex(dateString) {
-    const year = dateString.substring(1, 5);
-    const month = dateString.substring(5, 7);
-    const day = dateString.substring(7, 9);
-
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const monthName = months[parseInt(month, 10) - 1];
-
-    return `${day}-${monthName}-${year}`;
-}
-function groupDatesIntoWeeks(dates) {
-  // Convert dates to JavaScript Date objects
-  const dateObjects = dates.map(dateString => new Date(dateString));
-
-  const weeks = [];
-  let currentWeek = [];
-  let weekStartIndex = 0;
-
-  for (let i = 0; i < dateObjects.length; i++) {
-      const currentDate = dateObjects[i];
-      const currentDay = currentDate.getDay();
-
-      // Skip weekends
-      if (currentDay === 0 || currentDay === 6) {
-          continue;
-      }
-
-      // If it's a new week, add the previous week to the weeks array
-      if (currentDay === 1 || i === 0) {
-          if (currentWeek.length > 0) {
-              weeks.push(currentWeek);
-          }
-          currentWeek = [];
-          weekStartIndex = i;
-      }
-
-      // Add the index of the date to the current week
-      currentWeek.push(i);
-  }
-
-  // Add the last week if it's not empty
-  if (currentWeek.length > 0) {
-      weeks.push(currentWeek);
-  }
-
-  return weeks;
-}
-function groupDatesIntoMonths(dates) {
-  // Convert dates to JavaScript Date objects
-  const dateObjects = dates.map(dateString => new Date(dateString));
-
-  const months = [];
-  let currentMonth = [];
-  let monthStartIndex = 0;
-
-  for (let i = 0; i < dateObjects.length; i++) {
-      const currentDate = dateObjects[i];
-      const currentMonthValue = currentDate.getMonth();
-
-      // If it's a new month, add the previous month to the months array
-      if (currentMonthValue !== dateObjects[monthStartIndex].getMonth() || i === 0) {
-          if (currentMonth.length > 0) {
-              months.push(currentMonth);
-          }
-          currentMonth = [];
-          monthStartIndex = i;
-      }
-
-      // Add the index of the date to the current month
-      currentMonth.push(i);
-  }
-
-  // Add the last month if it's not empty
-  if (currentMonth.length > 0) {
-      months.push(currentMonth);
-  }
-
-  return months;
-}
-function groupDatesIntoYears(dates) {
-  // Convert dates to JavaScript Date objects
-  const dateObjects = dates.map(dateString => new Date(dateString));
-
-  const years = [];
-  let currentYear = [];
-  let yearStartIndex = 0;
-
-  for (let i = 0; i < dateObjects.length; i++) {
-      const currentDate = dateObjects[i];
-      const currentYearValue = currentDate.getFullYear();
-
-      // If it's a new year, add the previous year to the years array
-      if (currentYearValue !== dateObjects[yearStartIndex].getFullYear() || i === 0) {
-          if (currentYear.length > 0) {
-              years.push(currentYear);
-          }
-          currentYear = [];
-          yearStartIndex = i;
-      }
-
-      // Add the index of the date to the current year
-      currentYear.push(i);
-  }
-
-  // Add the last year if it's not empty
-  if (currentYear.length > 0) {
-      years.push(currentYear);
-  }
-
-  return years;
-}
 app.post('/department-report', async (req,res)=>{
 const {crietaria,duration,dates} = req.body
 const qry = "SELECT * FROM attendence.attendence;"
@@ -1303,10 +1327,10 @@ const total = countpresentindate1+countabsentindate1+countleaveindate1+countlate
 for(var i=0; i<perdateans.length; i++){
 
   const total = perdateans[i].countpresentindate+perdateans[i].countabsentindate+perdateans[i].countleaveindate+perdateans[i].countlateindate
-  presentd.push(Math.round((perdateans[i].countpresentindate*100)/total))
-  absentd.push(Math.round((perdateans[i].countabsentindate*100)/total))
-  leaved.push(Math.round((perdateans[i].countleaveindate*100)/total))
-  lated.push(Math.round((perdateans[i].countlateindate*100)/total))
+  presentd.push(perdateans[i].countpresentindate)
+  absentd.push(perdateans[i].countabsentindate)
+  leaved.push(perdateans[i].countleaveindate)
+  lated.push(perdateans[i].countlateindate)
 
 
 
@@ -1335,6 +1359,7 @@ if(crietaria==='daily'){
   var uabsentd = []
   var uleaved = []
   var ulated = []
+ 
   for(var i=0; i<upnp.length; i++){
     ulabels.push("Week "+(i+1).toString())
     var alpha = upnp[i]
@@ -1342,17 +1367,20 @@ if(crietaria==='daily'){
     var a=0
     var l=0
     var lt=0
-    for(var l=0; l<alpha.length; l++){
-      var test = alpha[l]
+  
+    for(var k=0; k<alpha.length; k++){
+      var test = alpha[k]
       p = p+presentd[test]
       a = a+absentd[test]
       l = l+leaved[test]
-      lt = lt+lated[test]
+      lt = lt+lated[test]   
     }
-    upresentd.push(p/alpha.length)
-    uabsentd.push(a/alpha.length)
-    uleaved.push(l/alpha.length)
-    ulated.push(lt/alpha.length)
+
+    var delta = result.length*alpha.length
+    upresentd.push(Math.round((p*100)/delta))
+    uabsentd.push(Math.round((a*100)/delta))
+    uleaved.push(Math.round((l*100)/delta))
+    ulated.push(Math.round((lt*100)/delta))
   }
 
   res.send({
@@ -1372,39 +1400,44 @@ if(crietaria==='daily'){
 }else if(crietaria==='monthly'){
 
   const upnp = await groupDatesIntoMonths(labels)
- 
+  const zara = []
+  for(var i=0; i<dates.length; i++){
+   var n = convertDatex(dates[i])
+   var x =n.slice(5,7)
+   const eel = givemonth(x)
+   var tnt = (zara[zara.length-1])
+   if(tnt === undefined){
+     zara.push(eel)
+   }else if(zara[zara.length-1] != eel){
+     zara.push(eel)
+   }
+  }
   var ulabels = []
   var upresentd = []
   var uabsentd = []
   var uleaved = []
   var ulated = []
+
   for(var i=0; i<upnp.length; i++){
-
-    ulabels.push("Month "+(i+1).toString())
-
+    ulabels.push(zara[i])
     var alpha = upnp[i]
-    
     var p=0
     var a=0
     var l=0
     var lt=0
- 
-    
+  
     for(var nn=0; nn<alpha.length; nn++){
-
       var test = alpha[nn]
- 
       p = p+presentd[test]
       a = a+absentd[test]
       l = l+leaved[test]
       lt = lt+lated[test]
-
     }
-
-    upresentd.push(Math.floor((p/alpha.length)))
-    uabsentd.push(Math.floor((a/alpha.length)))
-    uleaved.push(Math.floor((l/alpha.length)))
-    ulated.push(Math.floor((lt/alpha.length)))
+    var delta = result.length*alpha.length
+    upresentd.push(Math.round((p*100)/delta))
+    uabsentd.push(Math.round((a*100)/delta))
+    uleaved.push(Math.round((l*100)/delta))
+    ulated.push(Math.round((lt*100)/delta))
   }
 
   res.send({
@@ -1430,8 +1463,13 @@ if(crietaria==='daily'){
   var uleaved = []
   var ulated = []
   for(var i=0; i<upnp.length; i++){
-    ulabels.push("Year"+(i+1).toString())
+
     var alpha = upnp[i]
+    var ps2 = alpha[i]
+    if (ulabels[ulabels.length-1]!==dates[ps2].slice(1,5)){
+      ulabels.push(dates[ps2].slice(1,5))
+    }
+    
     var p=0
     var a=0
     var l=0
@@ -1443,10 +1481,11 @@ if(crietaria==='daily'){
       l = l+leaved[test]
       lt = lt+lated[test]
     }
-    upresentd.push(Math.round(p/alpha.length))
-    uabsentd.push(Math.round(a/alpha.length))
-    uleaved.push(Math.round(l/alpha.length))
-    ulated.push(Math.round(lt/alpha.length))
+    var delta = result.length*alpha.length
+    upresentd.push(Math.round((p*100)/delta))
+    uabsentd.push(Math.round((a*100)/delta))
+    uleaved.push(Math.round((l*100)/delta))
+    ulated.push(Math.round((lt*100)/delta))
   }
   res.send({
    
@@ -1494,11 +1533,8 @@ app.post('/class-report', async (req,res)=>{
     }
   }
   newqry = newqry.slice(0,-1)
-
   newqry = "SELECT "+newqry+" FROM students JOIN attendence ON students.admission_number = attendence.admission_number WHERE students.class = '"+classn+"' and students.section = '"+section+"';"
-
   const result =await queryAsync(newqry)
-
   var countpresentindate = 0
   var countabsentindate = 0
   var countleaveindate = 0
@@ -1534,20 +1570,15 @@ app.post('/class-report', async (req,res)=>{
       countlateindate = 0
   }
   const total = countpresentindate1+countabsentindate1+countleaveindate1+countlateindate1
-  
   for(var i=0; i<perdateans.length; i++){
   
     const total = perdateans[i].countpresentindate+perdateans[i].countabsentindate+perdateans[i].countleaveindate+perdateans[i].countlateindate
-    presentd.push(Math.round((perdateans[i].countpresentindate*100)/total))
-    absentd.push(Math.round((perdateans[i].countabsentindate*100)/total))
-    leaved.push(Math.round((perdateans[i].countleaveindate*100)/total))
-    lated.push(Math.round((perdateans[i].countlateindate*100)/total))
-  
-  
-  
-  
+    presentd.push(perdateans[i].countpresentindate)
+    absentd.push(perdateans[i].countabsentindate)
+    leaved.push(perdateans[i].countleaveindate)
+    lated.push(perdateans[i].countlateindate)
+
   }
-  
   if(crietaria==='daily'){
   
     res.send({
@@ -1570,26 +1601,34 @@ app.post('/class-report', async (req,res)=>{
     var uabsentd = []
     var uleaved = []
     var ulated = []
+
     for(var i=0; i<upnp.length; i++){
       ulabels.push("Week "+(i+1).toString())
       var alpha = upnp[i]
-      var p=0
-      var a=0
-      var l=0
-      var lt=0
+
+      var pb=0
+      var ab=0
+      var lb=0
+      var ltb=0
+      var tttrt = 0
+      
       for(var l=0; l<alpha.length; l++){
+        tttrt = alpha.length*result.length
         var test = alpha[l]
-        p = p+presentd[test]
-        a = a+absentd[test]
-        l = l+leaved[test]
-        lt = lt+lated[test]
+        pb = (pb+presentd[test])
+        ab = (ab+absentd[test])
+        lb = (lb+leaved[test])
+        ltb = (ltb+lated[test])
+
       }
-      upresentd.push(p/alpha.length)
-      uabsentd.push(a/alpha.length)
-      uleaved.push(l/alpha.length)
-      ulated.push(lt/alpha.length)
+
+      upresentd.push(Math.round((pb*100)/tttrt))
+      uabsentd.push(Math.round((ab*100)/tttrt))
+      uleaved.push(Math.round((lb*100)/tttrt))
+      ulated.push(Math.round((ltb*100)/tttrt))
+      
     }
-  
+
     res.send({
      
       tstr:result.length,
@@ -1607,7 +1646,21 @@ app.post('/class-report', async (req,res)=>{
   }else if(crietaria==='monthly'){
   
     const upnp = await groupDatesIntoMonths(labels)
-   
+
+    const zara = []
+   for(var i=0; i<dates.length; i++){
+    var n = convertDatex(dates[i])
+    var x =n.slice(5,7)
+    const eel = givemonth(x)
+    var tnt = (zara[zara.length-1])
+    if(tnt === undefined){
+      zara.push(eel)
+    }else if(zara[zara.length-1] != eel){
+      zara.push(eel)
+    }
+   }
+ 
+   console.log(zara)
     var ulabels = []
     var upresentd = []
     var uabsentd = []
@@ -1615,35 +1668,30 @@ app.post('/class-report', async (req,res)=>{
     var ulated = []
     for(var i=0; i<upnp.length; i++){
   
-      ulabels.push("Month "+(i+1).toString())
+      ulabels.push(zara[i])
   
       var alpha = upnp[i]
-      
-      var p=0
-      var a=0
-      var l=0
-      var lt=0
-   
-      
+      var pc=0
+      var ac=0
+      var lc=0
+      var ltc=0
+      var tttrt = 0
       for(var nn=0; nn<alpha.length; nn++){
   
         var test = alpha[nn]
-   
-        p = p+presentd[test]
-        a = a+absentd[test]
-        l = l+leaved[test]
-        lt = lt+lated[test]
+        tttrt = alpha.length*result.length
+        pc = pc+presentd[test]
+        ac = ac+absentd[test]
+        lc = lc+leaved[test]
+        ltc = ltc+lated[test]
   
       }
-  
-      upresentd.push(Math.floor((p/alpha.length)))
-      uabsentd.push(Math.floor((a/alpha.length)))
-      uleaved.push(Math.floor((l/alpha.length)))
-      ulated.push(Math.floor((lt/alpha.length)))
+      upresentd.push(Math.round((pc*100)/tttrt))
+      uabsentd.push(Math.round((ac*100)/tttrt))
+      uleaved.push(Math.round((lc*100)/tttrt))
+      ulated.push(Math.round((ltc*100)/tttrt))
     }
-  
     res.send({
-     
       tstr:result.length,
       tp:Math.round((countpresentindate1*100)/total),
       ta:Math.round((countabsentindate1*100)/total),
@@ -1667,21 +1715,23 @@ app.post('/class-report', async (req,res)=>{
     for(var i=0; i<upnp.length; i++){
       ulabels.push("Year"+(i+1).toString())
       var alpha = upnp[i]
-      var p=0
-      var a=0
-      var l=0
-      var lt=0
+      var pd=0
+      var ad=0
+      var ld=0
+      var ltd=0
+      var tttrt = 0
       for(var nn=0; nn<alpha.length; nn++){
+        tttrt = alpha.length*result.length
         var test = alpha[nn]
-        p = p+presentd[test]
-        a = a+absentd[test]
-        l = l+leaved[test]
-        lt = lt+lated[test]
+        pd = pd+presentd[test]
+        ad = ad+absentd[test]
+        ld = ld+leaved[test]
+        ltd = ltd+lated[test]
       }
-      upresentd.push(Math.round(p/alpha.length))
-      uabsentd.push(Math.round(a/alpha.length))
-      uleaved.push(Math.round(l/alpha.length))
-      ulated.push(Math.round(lt/alpha.length))
+      upresentd.push(Math.round((pd*100)/tttrt))
+      uabsentd.push(Math.round((ad*100)/tttrt))
+      uleaved.push(Math.round((ld*100)/tttrt))
+      ulated.push(Math.round((ltd*100)/tttrt))
     }
     res.send({
      
@@ -1769,27 +1819,27 @@ var newqry = "attendence.admission_number,"
   const total = countpresentindate1+countabsentindate1+countleaveindate1+countlateindate1
   
   for(var i=0; i<perdateans.length; i++){
-  
     const total = perdateans[i].countpresentindate+perdateans[i].countabsentindate+perdateans[i].countleaveindate+perdateans[i].countlateindate
-    presentd.push(Math.round((perdateans[i].countpresentindate*100)/total))
-    absentd.push(Math.round((perdateans[i].countabsentindate*100)/total))
-    leaved.push(Math.round((perdateans[i].countleaveindate*100)/total))
-    lated.push(Math.round((perdateans[i].countlateindate*100)/total))
-  
-  
-  
-  
+    presentd.push(perdateans[i].countpresentindate)
+    absentd.push(perdateans[i].countabsentindate)
+    leaved.push(perdateans[i].countleaveindate)
+    lated.push(perdateans[i].countlateindate)
   }
   
   if(crietaria==='daily'){
   
     res.send({
+      pushup:[],
       perdateans,
       tstr:totaldays,
-      tp:Math.round((countpresentindate1*100)/total),
-      ta:Math.round((countabsentindate1*100)/total),
-      tl:Math.round((countleaveindate1*100)/total),
-      tlt:Math.round((countlateindate1*100)/total),
+      tp:(countpresentindate1*100)/total,
+      ta:(countabsentindate1*100)/total,
+      tl:(countleaveindate1*100)/total,
+      tlt:(countlateindate1*100)/total,
+      tp1:countpresentindate1,
+      ta1:countabsentindate1,
+      tl1:countleaveindate1,
+      tlt1:countlateindate1,
       labels,
       presentd,
       absentd,
@@ -1797,6 +1847,8 @@ var newqry = "attendence.admission_number,"
       lated
     })
   }else if(crietaria==='weekly'){
+    var pushup = []
+    var fillpush = {}
     const upnp = await groupDatesIntoWeeks(labels)
     var ulabels = []
     var upresentd = []
@@ -1804,32 +1856,97 @@ var newqry = "attendence.admission_number,"
     var uleaved = []
     var ulated = []
     for(var i=0; i<upnp.length; i++){
+      fillpush = {week:'',monday:'',tuesday:'',wednesday:'',thursday:'',friday:'',days:0,present:0,absent:0,leave:0,late:0}
       ulabels.push("Week "+(i+1).toString())
+      fillpush.week = "Week "+(i+1).toString()
       var alpha = upnp[i]
-      var p=0
-      var a=0
-      var l=0
-      var lt=0
+      var pa=0
+      var aa=0
+      var la=0
+      var lta=0
+
       for(var l=0; l<alpha.length; l++){
         var test = alpha[l]
-        p = p+presentd[test]
-        a = a+absentd[test]
-        l = l+leaved[test]
-        lt = lt+lated[test]
+        var dayx = getDayOfWeek(dates[test])
+        if(dayx === 'Monday'){
+
+          if(presentd[test]===1){
+            fillpush.monday = 'P'
+          }else if(absentd[test] === 1){
+            fillpush.monday = 'A'
+          }else if(leaved[test]===1){
+            fillpush.monday = 'L'
+          }else if(lated[test]===1){
+            fillpush.monday = 'LT'
+          }
+
+        }else if(dayx === 'Tuesday'){
+          if(presentd[test]===1){
+            fillpush.tuesday = 'P'
+          }else if(absentd[test] === 1){
+            fillpush.tuesday = 'A'
+          }else if(leaved[test]===1){
+            fillpush.tuesday = 'L'
+          }else if(lated[test]===1){
+            fillpush.tuesday = 'LT'
+          }
+        }else if(dayx === 'Wednesday'){
+          if(presentd[test]===1){
+            fillpush.wednesday = 'P'
+          }else if(absentd[test] === 1){
+            fillpush.wednesday = 'A'
+          }else if(leaved[test]===1){
+            fillpush.wednesday = 'L'
+          }else if(lated[test]===1){
+            fillpush.wednesday = 'LT'
+          }
+        }else if(dayx === 'Thursday'){
+          if(presentd[test]===1){
+            fillpush.thursday = 'P'
+          }else if(absentd[test] === 1){
+            fillpush.thursday = 'A'
+          }else if(leaved[test]===1){
+            fillpush.thursday = 'L'
+          }else if(lated[test]===1){
+            fillpush.thursday = 'LT'
+          }
+        }else if(dayx === 'Friday'){
+          if(presentd[test]===1){
+            fillpush.friday = 'P'
+          }else if(absentd[test] === 1){
+            fillpush.friday = 'A'
+          }else if(leaved[test]===1){
+            fillpush.friday = 'L'
+          }else if(lated[test]===1){
+            fillpush.friday = 'LT'
+          }
+        }
+        pa = pa+presentd[test]
+        aa = aa+absentd[test]
+        la = la+leaved[test]
+        lta = lta+lated[test]
+        fillpush.days = 5
+        fillpush.present = countOccurrenceszx(fillpush,'P')
+        fillpush.absent = countOccurrenceszx(fillpush,'A')
+        fillpush.leave = countOccurrenceszx(fillpush,'L')
+        fillpush.late = countOccurrenceszx(fillpush,'LT')
+
       }
-      upresentd.push(p/alpha.length)
-      uabsentd.push(a/alpha.length)
-      uleaved.push(l/alpha.length)
-      ulated.push(lt/alpha.length)
-    }
+      pushup.push(fillpush)
+      upresentd.push(pa)
+      uabsentd.push(aa)
+      uleaved.push(la)
+      ulated.push(lta)
   
+    }
+
     res.send({
-     
-      tstr:totaldays,
-      tp:Math.round((countpresentindate1*100)/total),
-      ta:Math.round((countabsentindate1*100)/total),
-      tl:Math.round((countleaveindate1*100)/total),
-      tlt:Math.round((countlateindate1*100)/total),
+      pushup,
+      tstr:total,
+      tp:(Math.round((countpresentindate1*100)/total)),
+      ta:(Math.round((countabsentindate1*100)/total)),
+      tl:(Math.round((countleaveindate1*100)/total)),
+      tlt:(Math.round((countlateindate1*100)/total)),
       labels:ulabels,
       presentd:upresentd,
       absentd:uabsentd,
@@ -1840,7 +1957,18 @@ var newqry = "attendence.admission_number,"
   }else if(crietaria==='monthly'){
   
     const upnp = await groupDatesIntoMonths(labels)
-   
+    const zara = []
+    for(var i=0; i<dates.length; i++){
+     var n = convertDatex(dates[i])
+     var x =n.slice(5,7)
+     const eel = givemonth(x)
+     var tnt = (zara[zara.length-1])
+     if(tnt === undefined){
+       zara.push(eel)
+     }else if(zara[zara.length-1] != eel){
+       zara.push(eel)
+     }
+    }
     var ulabels = []
     var upresentd = []
     var uabsentd = []
@@ -1848,31 +1976,31 @@ var newqry = "attendence.admission_number,"
     var ulated = []
     for(var i=0; i<upnp.length; i++){
   
-      ulabels.push("Month "+(i+1).toString())
+      ulabels.push(zara[i])
   
       var alpha = upnp[i]
       
-      var p=0
-      var a=0
-      var l=0
-      var lt=0
+      var pb=0
+      var ab=0
+      var lb=0
+      var ltb=0
    
       
       for(var nn=0; nn<alpha.length; nn++){
   
         var test = alpha[nn]
    
-        p = p+presentd[test]
-        a = a+absentd[test]
-        l = l+leaved[test]
-        lt = lt+lated[test]
+        pb = pb+presentd[test]
+        ab = ab+absentd[test]
+        lb = lb+leaved[test]
+        ltb = ltb+lated[test]
   
       }
   
-      upresentd.push(Math.floor((p/alpha.length)))
-      uabsentd.push(Math.floor((a/alpha.length)))
-      uleaved.push(Math.floor((l/alpha.length)))
-      ulated.push(Math.floor((lt/alpha.length)))
+      upresentd.push(pb)
+      uabsentd.push(ab)
+      uleaved.push(lb)
+      ulated.push(ltb)
     }
   
     res.send({
@@ -1900,21 +2028,21 @@ var newqry = "attendence.admission_number,"
     for(var i=0; i<upnp.length; i++){
       ulabels.push("Year"+(i+1).toString())
       var alpha = upnp[i]
-      var p=0
-      var a=0
-      var l=0
-      var lt=0
+      var pc=0
+      var ac=0
+      var lc=0
+      var ltc=0
       for(var nn=0; nn<alpha.length; nn++){
         var test = alpha[nn]
-        p = p+presentd[test]
-        a = a+absentd[test]
-        l = l+leaved[test]
-        lt = lt+lated[test]
+        pc = pc+presentd[test]
+        ac = ac+absentd[test]
+        lc = lc+leaved[test]
+        ltc = ltc+lated[test]
       }
-      upresentd.push(Math.round(p/alpha.length))
-      uabsentd.push(Math.round(a/alpha.length))
-      uleaved.push(Math.round(l/alpha.length))
-      ulated.push(Math.round(lt/alpha.length))
+      upresentd.push(pc)
+      uabsentd.push(ac)
+      uleaved.push(lc)
+      ulated.push(ltc)
     }
     res.send({
      
@@ -1933,16 +2061,6 @@ var newqry = "attendence.admission_number,"
 
 
 })
-function convertDateFormatzx(dateString) {
-  // Split the input date string by '-'
-  const parts = dateString.split('-');
-  
-  // Reconstruct the date in 'yyyymmdd' format
-  const formattedDate = `${parts[0]}${parts[1].padStart(2, '0')}${parts[2].padStart(2, '0')}`;
-  
-  return formattedDate;
-}
-
 app.post('/get-warning-letters',async (req,res)=>{
   const {classn,section,session} = req.body
   const dates = await queryAsync("select * from attendence.sessiondates where session = '"+session+"';")
@@ -2017,7 +2135,9 @@ app.post('/get-warning-letters',async (req,res)=>{
   console.log(warningletters)
   res.send(warningletters)
 })
-
+app.post('/get-student-attendance',async (req,res)=>{
+console.log(req.body)
+})
 app.post('/warning-letters', async (req,res)=>{
   const {classn,section,sessiont} = req.body
   const qry1 = ""
