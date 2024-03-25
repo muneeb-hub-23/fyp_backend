@@ -1713,8 +1713,12 @@ app.post('/class-report', async (req,res)=>{
     var uleaved = []
     var ulated = []
     for(var i=0; i<upnp.length; i++){
-      ulabels.push("Year"+(i+1).toString())
       var alpha = upnp[i]
+      var ps2 = alpha[i]
+      if (ulabels[ulabels.length-1]!==dates[ps2].slice(1,5)){
+        ulabels.push(dates[ps2].slice(1,5))
+      }
+ 
       var pd=0
       var ad=0
       var ld=0
@@ -1832,10 +1836,10 @@ var newqry = "attendence.admission_number,"
       pushup:[],
       perdateans,
       tstr:totaldays,
-      tp:(countpresentindate1*100)/total,
-      ta:(countabsentindate1*100)/total,
-      tl:(countleaveindate1*100)/total,
-      tlt:(countlateindate1*100)/total,
+      tp:Math.round((countpresentindate1*100)/total),
+      ta:Math.round((countabsentindate1*100)/total),
+      tl:Math.round((countleaveindate1*100)/total),
+      tlt:Math.round((countlateindate1*100)/total),
       tp1:countpresentindate1,
       ta1:countabsentindate1,
       tl1:countleaveindate1,
@@ -2004,7 +2008,7 @@ var newqry = "attendence.admission_number,"
     }
   
     res.send({
-     
+      pushup:[],
       tstr:totaldays,
       tp:Math.round((countpresentindate1*100)/total),
       ta:Math.round((countabsentindate1*100)/total),
@@ -2026,8 +2030,12 @@ var newqry = "attendence.admission_number,"
     var uleaved = []
     var ulated = []
     for(var i=0; i<upnp.length; i++){
-      ulabels.push("Year"+(i+1).toString())
+
       var alpha = upnp[i]
+      var ps2 = alpha[i]
+      if (ulabels[ulabels.length-1]!==dates[ps2].slice(1,5)){
+        ulabels.push(dates[ps2].slice(1,5))
+      }
       var pc=0
       var ac=0
       var lc=0
@@ -2045,7 +2053,7 @@ var newqry = "attendence.admission_number,"
       ulated.push(ltc)
     }
     res.send({
-     
+      pushup:[],
       tstr:totaldays,
       tp:Math.round((countpresentindate1*100)/total),
       ta:Math.round((countabsentindate1*100)/total),
@@ -2132,18 +2140,62 @@ app.post('/get-warning-letters',async (req,res)=>{
     }
 
   }
-  console.log(warningletters)
+
   res.send(warningletters)
 })
 app.post('/get-student-attendance',async (req,res)=>{
 console.log(req.body)
 })
+
 app.post('/warning-letters', async (req,res)=>{
   const {classn,section,sessiont} = req.body
   const qry1 = ""
-
+  console.log(req.body)
 
   res.send({classn,section,sessiont})
+
+})
+function getCurrentTime() {
+  const currentDate = new Date();
+  let hours = currentDate.getHours();
+  let minutes = currentDate.getMinutes();
+  let seconds = currentDate.getSeconds();
+
+  // Add leading zeros if needed
+  hours = hours < 10 ? '0' + hours : hours;
+  minutes = minutes < 10 ? '0' + minutes : minutes;
+  seconds = seconds < 10 ? '0' + seconds : seconds;
+
+  // Return the formatted time string
+  return `${hours}:${minutes}:${seconds}`;
+}
+function getCurrentDatetx() {
+  const currentDate = new Date();
+  const day = currentDate.getDate();
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  const monthIndex = currentDate.getMonth();
+  const year = currentDate.getFullYear();
+
+  // Format the date with the day, month name, and year
+  const formattedDate = `${day}-${monthNames[monthIndex]}-${year}`;
+
+  return formattedDate;
+}
+
+app.post('/write-logs', async (req,res)=>{
+const time = getCurrentTime()
+const date = getCurrentDatetx()
+const {token,username,activity,path} = req.body
+const query = "INSERT INTO `attendence`.`logs` (`token`, `username`, `time`, `date`, `activity`,`path`) VALUES ('"+token+"', '"+username+"', '"+time+"', '"+date+"', '"+activity+"', '"+path+"');"
+const result = await queryAsync(query)
+res.send(result)
+
+})
+app.post('/read-logs', async (req,res)=>{
+const query = "SELECT * FROM attendence.logs;"
 
 })
 
