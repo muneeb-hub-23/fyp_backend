@@ -706,7 +706,7 @@ res.send(present)
 });
 app.post('/today-ict-strength', async (req,res)=>{
     try {
-      const result = await queryAsync("SELECT count(admission_number) as strength FROM attendence.students;");
+      const result = await queryAsync("SELECT count(admission_number) as strength FROM attendence.students where shift = '"+req.body.shift+"';");
       res.send(result[0])
       } catch (error) {
         console.log(error);
@@ -716,7 +716,7 @@ app.post('/today-ict-present', async (req,res)=>{
 
 
     try {
-      const query = "SELECT count(d"+getCurrentDate()+") as present FROM attendence.attendence where d"+getCurrentDate()+" = 'p';"
+      const query = "SELECT count(d"+getCurrentDate()+") as present,shift FROM attendence.attendence left join attendence.students on attendence.attendence.admission_number=attendence.students.admission_number where d"+getCurrentDate()+" = 'p' and shift = '"+req.body.shift+"';"
       mysql.query(query,(err,response)=>{
         if(err){
           console.log(err)
@@ -735,7 +735,7 @@ app.post('/today-ict-absent', async (req,res)=>{
   var date = new Date()
 
   try {
-    const result = await queryAsync("SELECT count(d"+getCurrentDate()+") as absent FROM attendence.attendence where d"+getCurrentDate()+" = 'a';");
+    const result = await queryAsync("SELECT count(d"+getCurrentDate()+") as absent,shift FROM attendence.attendence left join attendence.students on attendence.attendence.admission_number=attendence.students.admission_number where d"+getCurrentDate()+" = 'a' and shift = '"+req.body.shift+"';")
     res.send(result[0])
     return
     } catch (error) {
@@ -747,7 +747,7 @@ app.post('/today-ict-absent', async (req,res)=>{
 app.post('/today-ict-leave', async (req,res)=>{
 
   try {
-  const result = await queryAsync("SELECT count(d"+getCurrentDate()+") as leaves FROM attendence.attendence where d"+getCurrentDate()+" = 'l';");
+  const result = await queryAsync("SELECT count(d"+getCurrentDate()+") as leaves,shift FROM attendence.attendence left join attendence.students on attendence.attendence.admission_number=attendence.students.admission_number where d"+getCurrentDate()+" = 'l' and shift = '"+req.body.shift+"';");
   res.send(result[0])
   return
   } catch (error) {
@@ -760,7 +760,7 @@ app.post('/today-ict-lates', async (req,res)=>{
 
 
   try {
-    const result = await queryAsync("SELECT count(d"+getCurrentDate()+") as lates FROM attendence.attendence where d"+getCurrentDate()+" = 'lt';");
+    const result = await queryAsync("SELECT count(d"+getCurrentDate()+") as lates,shift FROM attendence.attendence left join attendence.students on attendence.attendence.admission_number=attendence.students.admission_number where d"+getCurrentDate()+" = 'lt' and shift = '"+req.body.shift+"';");
     res.send(result[0])
     return
     } catch (error) {
@@ -773,14 +773,7 @@ app.post('/dashboard-charts', async (req,res)=>{
   let month = req.body[0]
   let year = req.body[1]
   const responseArray = [];
-  const classSections = [
-    { class: '1st-year', section: 'a' },
-    { class: '1st-year', section: 'b' },
-    { class: '2nd-year', section: 'a' },
-    { class: '2nd-year', section: 'b' },
-    { class: '3rd-year', section: 'a' },
-    { class: '3rd-year', section: 'b' }
-  ];
+  const classSections = req.body.classsections
 
 
 for(var m=0; m<6; m++){
@@ -1266,10 +1259,11 @@ app.post('/get-special-sections', async (req,res)=>{
     });
 })
 app.post('/department-report', async (req,res)=>{
-const {crietaria,duration,dates} = req.body
-const qry = "SELECT * FROM attendence.attendence;"
+
+const {crietaria,duration,dates,shift} = req.body
+const qry = "SELECT * FROM attendence.attendence left join attendence.students on attendence.attendence.admission_number = attendence.students.admission_number where shift = '"+shift+"';"
 const match = await queryAsync(qry)
-var newqry = "admission_number,"
+var newqry = "attendence.admission_number,"
 var newqryarray = []
 var perdateans = []
 var labels = []
@@ -1290,7 +1284,7 @@ for(var i=0; i<dates.length; i++){
   }
 }
 newqry = newqry.slice(0,-1)
-newqry = "Select "+newqry+" FROM attendence.attendence;"
+newqry = "Select "+newqry+",shift FROM attendence.attendence left join attendence.students on attendence.attendence.admission_number = attendence.students.admission_number where shift = '"+shift+"';"
 const result =await queryAsync(newqry)
 var countpresentindate = 0
 var countabsentindate = 0
@@ -1342,6 +1336,7 @@ for(var i=0; i<perdateans.length; i++){
 }
 
 if(crietaria==='daily'){
+
 
   res.send({
     perdateans,
