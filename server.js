@@ -643,14 +643,14 @@ app.post('/mark-attendance', async (req, res) => {
   
   try {
     await queryAsync(qry1, 'Error marking attendance');
-    console.log('Attendance marked successfully');
+    res.send('Attendance marked successfully');
     return;
   } catch (error1) {
     console.error(error1);
     try {
       await queryAsync(qry2, 'Error adding new column');
       await queryAsync(qry1, 'Error marking attendance');
-      console.log('Attendance marked successfully after adding a new column');
+      res.send('Attendance marked successfully after adding a new column');
     } catch (error2) {
       console.error(error2);
     }
@@ -1145,7 +1145,7 @@ app.post('/add-user', async (req,res)=>{
   mysql.query('select * from attendence.employees where employee_number = '+userdata.employee_number+';', (error, result) => {
     if (result.length === 0){
 
-      queryAsync("INSERT INTO `attendence`.`employees` (`employee_number`, `employee_full_name`, `employee_mobile_number`, `father_full_name`, `father_mobile_number`, `joining_date`, `email`, `cnic`, `password`) VALUES ('"+userdata.employee_number+"', '"+userdata.employee_full_name+"', '"+userdata.employee_mobile_number+"', '"+userdata.father_full_name+"', '"+userdata.father_mobile_number+"', '"+userdata.joining_date+"', '"+userdata.email+"', '"+userdata.cnic+"', '"+userdata.password+"');")
+      queryAsync("INSERT INTO `attendence`.`employees` (`employee_number`, `employee_full_name`, `employee_mobile_number`, `father_full_name`, `father_mobile_number`, `joining_date`, `email`, `cnic`, `password`,`emp_token`) VALUES ('"+userdata.employee_number+"', '"+userdata.employee_full_name+"', '"+userdata.employee_mobile_number+"', '"+userdata.father_full_name+"', '"+userdata.father_mobile_number+"', '"+userdata.joining_date+"', '"+userdata.email+"', '"+userdata.cnic+"', '"+userdata.password+"','"+userdata.emp_token+"');")
       
       for(var i = 0; i<permissions.length; i++){
         queryAsync("INSERT INTO `attendence`.`permissions` (`employee_number`, `permission`) VALUES ('"+userdata.employee_number+"', '"+permissions[i]+"');")
@@ -1189,9 +1189,9 @@ mysql.query(qry1, (error, result) => {
 
 })
 app.post('/match-user',async (req,res)=>{
-  let data =await queryAsync("SELECT employee_number,password FROM attendence.employees where employee_number='"+req.body.userName+"';")
+  let data =await queryAsync("SELECT employee_number,emp_token,employee_full_name FROM attendence.employees where emp_token='"+req.body.userName+"';")
   if(data.length === 0){
-  res.send({username:'f33af23235456fgg433ggwg43662436;;K;$#$$3gGgg43$%#$%geGrt$#%5gfd$%v65654',password:'36;;K;$#$$3gGgg43$gwg43662436;;K;$#$$3gGgg43$%%#$%geGrt$#%5gfd$%v65654'})
+  res.send({username:'f33af23235456fgg433ggwg43662436;;K;$#$$3gGgg43$%#$%geGrt$#%5gfd$%v65654',emp_token:'36;;K;$#$$3gGgg43$gwg43662436;;K;$#$$3gGgg43$%%#$%geGrt$#%5gfd$%v65654'})
   }else{
   res.send(data[0])
   }
@@ -1200,7 +1200,8 @@ app.post('/get-permissions',async (req,res)=>{
   var data = []
   var responsearray = []
   try{
-    data = await queryAsync('SELECT * FROM attendence.permissions where employee_number = '+req.body.usern+';')
+    const replace = await queryAsync("SELECT * FROM attendence.employees where emp_token = '"+req.body.usern+"';")
+    data = await queryAsync('SELECT * FROM attendence.permissions where employee_number = '+replace[0].employee_number+';')
     for(var i =1; i<data.length; i++){
       responsearray.push(data[i].permission)
     }
@@ -1241,8 +1242,10 @@ app.post('/delete-class-permission',async (req,res)=>{
     }
   });
 })
-app.post('/get-special-classes',(req,res)=>{
-const qry = "SELECT * FROM attendence.classpermissions where employee_number = '"+req.body.number+"';"
+app.post('/get-special-classes', async (req,res)=>{
+const matcher = await queryAsync("Select * from attendence.employees where emp_token = '"+req.body.number+"';")
+console.log(matcher)
+const qry = "SELECT * FROM attendence.classpermissions where employee_number = '"+matcher[0].employee_number+"';"
   mysql.query(qry, (error, result) => {
     if (error){
       res.send({error:true})
@@ -1251,8 +1254,9 @@ const qry = "SELECT * FROM attendence.classpermissions where employee_number = '
     }
   });
 })
-app.post('/get-special-sections',(req,res)=>{
-  const qry = "SELECT * FROM attendence.classpermissions where employee_number = '"+req.body.number+"';"
+app.post('/get-special-sections', async (req,res)=>{
+  const matcher = await queryAsync("Select * from attendence.employees where emp_token = '"+req.body.number+"';")
+  const qry = "SELECT * FROM attendence.classpermissions where employee_number = '"+matcher[0].employee_number+"';"
     mysql.query(qry, (error, result) => {
       if (error){
         res.send({error:true})
@@ -2196,6 +2200,8 @@ res.send(result)
 })
 app.post('/read-logs', async (req,res)=>{
 const query = "SELECT * FROM attendence.logs;"
+const result = await queryAsync(query)
+res.send(result)
 
 })
 
