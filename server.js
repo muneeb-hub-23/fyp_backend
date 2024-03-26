@@ -770,8 +770,7 @@ app.post('/today-ict-lates', async (req,res)=>{
 })  
 app.post('/dashboard-charts', async (req,res)=>{
 
-  let month = req.body[0]
-  let year = req.body[1]
+
   const responseArray = [];
   const classSections = req.body.classsections
 
@@ -783,29 +782,27 @@ var absent=0;
 var leave=0;
 var lates=0;
 
-  try {
-      const result = await queryAsync("select admission_number,class,section,count(admission_number) as strength from students where class = '"+classSections[m].class+"' and section='"+classSections[m].section+"';");
-      strength=result[0].strength
+const result = await queryAsync("select admission_number,class,section,count(admission_number) as strength from students where class = '"+classSections[m].class+"' and section='"+classSections[m].section+"';");
+strength=result[0].strength
 
-      const result1 = await queryAsync("SELECT s.admission_number,d"+getCurrentDate()+",COUNT(a.d"+getCurrentDate()+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+classSections[m].class+"' AND s.section = '"+classSections[m].section+"' AND a.d"+getCurrentDate()+" = 'p';");
-      present=result1[0].count_of_present
+const result1 = await queryAsync("SELECT s.admission_number,d"+getCurrentDate()+",COUNT(a.d"+getCurrentDate()+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+classSections[m].class+"' AND s.section = '"+classSections[m].section+"' AND a.d"+getCurrentDate()+" = 'p';");
+present=result1[0].count_of_present
 
-      const result2 = await queryAsync("SELECT s.admission_number,d"+getCurrentDate()+",COUNT(a.d"+getCurrentDate()+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+classSections[m].class+"' AND s.section = '"+classSections[m].section+"' AND a.d"+getCurrentDate()+" = 'a';");
-      absent=result2[0].count_of_present
+const result2 = await queryAsync("SELECT s.admission_number,d"+getCurrentDate()+",COUNT(a.d"+getCurrentDate()+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+classSections[m].class+"' AND s.section = '"+classSections[m].section+"' AND a.d"+getCurrentDate()+" = 'a';");
+absent=result2[0].count_of_present
 
-      const result3 = await queryAsync("SELECT s.admission_number,d"+getCurrentDate()+",COUNT(a.d"+getCurrentDate()+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+classSections[m].class+"' AND s.section = '"+classSections[m].section+"' AND a.d"+getCurrentDate()+" = 'l';");
-      leave=result3[0].count_of_present
+const result3 = await queryAsync("SELECT s.admission_number,d"+getCurrentDate()+",COUNT(a.d"+getCurrentDate()+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+classSections[m].class+"' AND s.section = '"+classSections[m].section+"' AND a.d"+getCurrentDate()+" = 'l';");
+leave=result3[0].count_of_present
 
-      const result4 = await queryAsync("SELECT s.admission_number,d"+getCurrentDate()+",COUNT(a.d"+getCurrentDate()+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+classSections[m].class+"' AND s.section = '"+classSections[m].section+"' AND a.d"+getCurrentDate()+" = 'lt';");
-      lates=result4[0].count_of_present
+const result4 = await queryAsync("SELECT s.admission_number,d"+getCurrentDate()+",COUNT(a.d"+getCurrentDate()+") AS count_of_present FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+classSections[m].class+"' AND s.section = '"+classSections[m].section+"' AND a.d"+getCurrentDate()+" = 'lt';");
+lates=result4[0].count_of_present
 
-      } catch (error) {
-              console.log(error);
-            }
 responseArray.push([strength,present,absent,leave,lates])
-  }
+
+}
 
 res.send(responseArray)
+
 })
 app.post('/dashboard-chart-expanded', async (req,res)=>{
   
@@ -1237,12 +1234,13 @@ app.post('/delete-class-permission',async (req,res)=>{
 })
 app.post('/get-special-classes', async (req,res)=>{
 const matcher = await queryAsync("Select * from attendence.employees where emp_token = '"+req.body.number+"';")
-console.log(matcher)
+
 const qry = "SELECT * FROM attendence.classpermissions where employee_number = '"+matcher[0].employee_number+"';"
   mysql.query(qry, (error, result) => {
     if (error){
       res.send({error:true})
     }else{
+
       res.send(result)
     }
   });
