@@ -199,9 +199,6 @@ function getDatesInRange(startDateStr, endDateStr) {
 
   return dates;
 }
-function countVariables(obj) {
-  return Object.keys(obj).length;
-}
 async function countConsecutiveAs(arr,dayss) {
   let result = [];
   let count = 0;
@@ -377,9 +374,40 @@ function countOccurrenceszx(obj, valueToCount) {
 
   return count;
 }
+function getCurrentTime() {
+  const currentDate = new Date();
+  let hours = currentDate.getHours();
+  let minutes = currentDate.getMinutes();
+  let seconds = currentDate.getSeconds();
+
+  // Add leading zeros if needed
+  hours = hours < 10 ? '0' + hours : hours;
+  minutes = minutes < 10 ? '0' + minutes : minutes;
+  seconds = seconds < 10 ? '0' + seconds : seconds;
+
+  // Return the formatted time string
+  return `${hours}:${minutes}:${seconds}`;
+}
+function getCurrentDatetx() {
+  const currentDate = new Date();
+  const day = currentDate.getDate();
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  const monthIndex = currentDate.getMonth();
+  const year = currentDate.getFullYear();
+
+  // Format the date with the day, month name, and year
+  const formattedDate = `${day}-${monthNames[monthIndex]}-${year}`;
+
+  return formattedDate;
+}
 
 
 app.post('/add-student', async (req, res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
 const props = req.body;
 
 const query0 = await queryAsync("select * from attendence.students where admission_number ='"+props.admission_number+"';")
@@ -430,20 +458,24 @@ if(query0.length === 0 & query1.length === 0 & query2.length === 0){
   res.send({error:true,msg:'Duplicate CNIC'})
   }
 }
-
+  }
 });
-app.post('/add-blocked-date',(req,res)=>{
+app.post('/add-blocked-date', async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
+const check = await queryAsync("select * from attendence.offdates where date = '"+req.body.date+"';")
 const query = "INSERT INTO `attendence`.`offdates` (`date`, `comment`) VALUES ('"+req.body.date+"', '"+req.body.comment+"');"
-mysql.query(query,(err,result)=>{
-  if(err){
-    console.log(err)
-    res.send({error:true})
-  }else{
-    res.send({error:false})
+if(check.length===0){
+await queryAsync(query)
+res.send({error:false})
+}else{
+  res.send({error:true})
+}
   }
 })
-})
-app.post('/delete-blocked-date',(req,res)=>{
+app.post('/delete-blocked-date', async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const query = "DELETE FROM `attendence`.`offdates` WHERE (`idoffdates` = '"+req.body.date+"');"
   mysql.query(query,(err,result)=>{
     if(err){
@@ -453,28 +485,36 @@ app.post('/delete-blocked-date',(req,res)=>{
       res.send({error:false})
     }
   })
+}
 })
 app.post('/get-blocked-dates',async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const data = await queryAsync("select * from attendence.offdates;")
   const resdates = []
   for(var i = 0; i<data.length; i++){
     resdates.push(data[i].date)
   }
   res.send({resdates,data})
+}
 })
-app.post('/add-session',(req,res)=>{
+app.post('/add-session',async(req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
 const {selectedYear,sdate,edate} = req.body
+const resu = await queryAsync("select * from attendence.sessiondates where session = '"+selectedYear+"';")
 const query = "INSERT INTO `attendence`.`sessiondates` (`session`, `startdate`, `enddate`) VALUES ('"+selectedYear+"', '"+sdate+"', '"+edate+"');"
-mysql.query(query,(err,result)=>{
-  if(err){
-    console.log(err)
-    res.send({error:true})
-  }else{
-    res.send({error:false})
+if(resu.length===0){
+  await queryAsync(query)
+  res.send({error:false})
+}else{
+  res.send({error:true})
+}
   }
 })
-})
-app.post('/delete-session',(req,res)=>{
+app.post('/delete-session', async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const query = "DELETE FROM `attendence`.`sessiondates` WHERE (`idsessiondates` = '"+req.body.sid+"');"
   mysql.query(query,(err,result)=>{
     if(err){
@@ -484,12 +524,18 @@ app.post('/delete-session',(req,res)=>{
       res.send({error:false})
     }
   })
+}
 })
 app.post('/get-sessions',async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const data = await queryAsync("select * from attendence.sessiondates;")
   res.send(data)
+  }
 })
 app.post('/get-total-days',async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
 
   const sdate = convertDate(req.body.sdate)
   const ldate = convertDate(req.body.ldate)
@@ -570,8 +616,11 @@ app.post('/get-total-days',async (req,res)=>{
   const counter = rightarray1.length
   
   res.send({totaldays:counter,totalp,totala,totall,totallt,firstwarning,secondwarning,thirdwarning})
+}
 })
-app.post('/get-students-list', (req, res) => {
+app.post('/get-students-list', async (req, res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   let qry = ("SELECT * FROM attendence.students Where (class = '"+req.body.class1+"' and section = '"+req.body.section1+"');");
   mysql.query(qry, (error, results) => {
     if (error) {
@@ -580,9 +629,11 @@ app.post('/get-students-list', (req, res) => {
     }
     res.send(JSON.stringify(results));
   });
+}
 });  
-app.post('/get-users-list', (req, res) => {
-
+app.post('/get-users-list', async (req, res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   let qry = ("SELECT * FROM attendence.employees;");
   mysql.query(qry, (error, results) => {
     if (error) {
@@ -591,8 +642,11 @@ app.post('/get-users-list', (req, res) => {
     }
     res.send(JSON.stringify(results));
   });
+}
 }); 
-app.post('/delete-user', (req, res) => {
+app.post('/delete-user', async (req, res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   let user = req.body.username
   let qry = ("DELETE FROM `attendence`.`permissions` WHERE (`employee_number` = '"+user+"');")
   let qry2 = ("DELETE FROM `attendence`.`employees` WHERE (`employee_number` = '"+user+"');")
@@ -609,9 +663,11 @@ app.post('/delete-user', (req, res) => {
       res.send(JSON.stringify(results));
     });
   });
+}
 });
-app.post('/delete-student', (req, res) => {
-
+app.post('/delete-student', async (req, res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const props = req.body.props;
   let value = req.body.value;
   let qry = "DELETE FROM `attendence`.`students` WHERE (`admission_number` = '"+value+"');";
@@ -625,10 +681,11 @@ app.post('/delete-student', (req, res) => {
           return
 
 });  
-console.log(qry);
+  }
 });
-app.post('/get-student-info', (req, res) => {
-
+app.post('/get-student-info', async (req, res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   let value = req.body.value.admission_number;
   let qry = "SELECT * FROM attendence.students where (admission_number = '"+value+"');";
 
@@ -638,8 +695,11 @@ app.post('/get-student-info', (req, res) => {
   else
       res.send(results);
 });  
+  }
 });
-app.post('/update-student', (req, res) => {
+app.post('/update-student',async (req, res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
 let value = req.body;
 
 let qry = "UPDATE `attendence`.`students` SET `roll_no` = '"+value.roll_no+"', `student_full_name` = '"+value.student_full_name+"', `student_mobile_number` = '"+value.student_mobile_number+"', `father_full_name` = '"+value.father_full_name+"', `father_mobile_number` = '"+value.father_mobile_number+"', `joining_date` = '"+value.joining_date+"', `email` = '"+value.email+"', `cnic` = '"+value.cnic+"', `department` = '"+value.department+"', `class` = '"+value.class1+"', `section` = '"+value.section+"', `shift` = '"+value.shift+"' WHERE (`admission_number` = '"+value.admission_number+"');"
@@ -649,8 +709,11 @@ let qry = "UPDATE `attendence`.`students` SET `roll_no` = '"+value.roll_no+"', `
   else
       res.send("all ok");
 });  
+  }
 });
 app.post('/mark-attendance', async (req, res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   res.send(JSON.stringify({value:true}))
   let date = req.body.date;
   let admission_number = req.body.admission_number
@@ -672,10 +735,11 @@ app.post('/mark-attendance', async (req, res) => {
       console.error(error2);
     }
   }
-
+  }
 });
 app.post('/view-attendance', async (req, res) => {
-
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
     let present = [[],[],[],[],[],[]];
     let date1 = convertDateFormat(req.body.date1);
     date1 = 'd'+date1
@@ -720,18 +784,23 @@ console.log(error);
 }
 }
 res.send(present)
+  }
 });
 app.post('/today-ict-strength', async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
     try {
       const result = await queryAsync("SELECT count(admission_number) as strength FROM attendence.students where shift = '"+req.body.shift+"';");
       res.send(result[0])
       } catch (error) {
         console.log(error);
       }
+    }
 })
 app.post('/today-ict-present', async (req,res)=>{
 
-
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
     try {
       const query = "SELECT count(d"+getCurrentDate()+") as present,shift FROM attendence.attendence left join attendence.students on attendence.attendence.admission_number=attendence.students.admission_number where d"+getCurrentDate()+" = 'p' and shift = '"+req.body.shift+"';"
       mysql.query(query,(err,response)=>{
@@ -747,10 +816,11 @@ app.post('/today-ict-present', async (req,res)=>{
         res.send('data not found')
     return
       }
+    }
 })
 app.post('/today-ict-absent', async (req,res)=>{
-  var date = new Date()
-
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   try {
     const result = await queryAsync("SELECT count(d"+getCurrentDate()+") as absent,shift FROM attendence.attendence left join attendence.students on attendence.attendence.admission_number=attendence.students.admission_number where d"+getCurrentDate()+" = 'a' and shift = '"+req.body.shift+"';")
     res.send(result[0])
@@ -760,9 +830,11 @@ app.post('/today-ict-absent', async (req,res)=>{
       return
 
     }
+  }
 })
 app.post('/today-ict-leave', async (req,res)=>{
-
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   try {
   const result = await queryAsync("SELECT count(d"+getCurrentDate()+") as leaves,shift FROM attendence.attendence left join attendence.students on attendence.attendence.admission_number=attendence.students.admission_number where d"+getCurrentDate()+" = 'l' and shift = '"+req.body.shift+"';");
   res.send(result[0])
@@ -772,9 +844,11 @@ app.post('/today-ict-leave', async (req,res)=>{
     return
 
   }
+}
 })  
 app.post('/today-ict-lates', async (req,res)=>{
-
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
 
   try {
     const result = await queryAsync("SELECT count(d"+getCurrentDate()+") as lates,shift FROM attendence.attendence left join attendence.students on attendence.attendence.admission_number=attendence.students.admission_number where d"+getCurrentDate()+" = 'lt' and shift = '"+req.body.shift+"';");
@@ -784,9 +858,11 @@ app.post('/today-ict-lates', async (req,res)=>{
       res.send('data not found')
       return
     }
+  }
 })  
 app.post('/dashboard-charts', async (req,res)=>{
-
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
 
   const responseArray = [];
   const classSections = req.body.classsections
@@ -819,10 +895,12 @@ responseArray.push([strength,present,absent,leave,lates])
 }
 
 res.send(responseArray)
+  }
 
 })
 app.post('/dashboard-chart-expanded', async (req,res)=>{
-  
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const responseArray = [];
   const class1 = req.body.classn
   const section = req.body.section
@@ -869,8 +947,11 @@ app.post('/dashboard-chart-expanded', async (req,res)=>{
       }
     
     res.send(responseArray)
+  }
 });
 app.post('/student-is-listing', async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const class1 = req.body.class1
   const section = req.body.section1
   const query = "SELECT s.admission_number,s.roll_no,s.student_full_name,(d"+getCurrentDate()+") As status1 FROM students s JOIN attendence a ON s.admission_number = a.admission_number where s.class = '"+class1+"' AND s.section = '"+section+"'"
@@ -881,9 +962,17 @@ app.post('/student-is-listing', async (req,res)=>{
       console.log(error);
       return
     }
+  }
 });
+
+
+
+
+
 app.post('/fines', async (req, res) => {
+
   try {
+    
     const { sdate, ldate, admission_number } = req.body;
 
     const data = await queryAsync(`SELECT * FROM attendence.attendence WHERE admission_number = ${admission_number}`);
@@ -939,8 +1028,10 @@ app.post('/fines', async (req, res) => {
     console.error(error);
     res.status(500).send('Internal Server Error');
   }
+
 });
 app.post('/allfines', async (req, res) => {
+
   try {
     var dbi = [];
     let students = req.body.students;
@@ -976,8 +1067,10 @@ app.post('/allfines', async (req, res) => {
   } catch (err) {
     console.log(err);
   }
+
 });
 app.post('/classfines', async (req, res) => {
+
 console.log(req.body)
   // try {
   //   var dbi = [];
@@ -1014,6 +1107,7 @@ console.log(req.body)
   // } catch (err) {
   //   console.log(err);
   // }
+
 });
 app.post('/detailedfines', async (req,res) => {
 
@@ -1078,74 +1172,111 @@ if(consectiveFine === 5 & dday === 'Friday'){
 res.send(responseArray)
 
 })
+
+
+
+
 app.post('/get-classes', async (req,res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
 let query = "Select classes from attendence.classes";
 const response = await queryAsync(query)
 res.send(response)
+  }
 })
 app.post('/get-sections',async (req,res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   let query = "Select sections from attendence.sections";
   const response = await queryAsync(query)
 res.send(response)
+  }
 })
 app.post('/get-departments',async (req,res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   let query = "Select department from attendence.departments";
   const response = await queryAsync(query)
 res.send(response)
+  }
 })
 app.post('/get-shifts',async (req,res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   let query = "Select shifts from attendence.shifts";
   const response = await queryAsync(query)
 res.send(response)
+  }
 })
 app.post('/add-new-class',async (req,res) => {
-
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const query = "INSERT INTO `attendence`.`classes` (`classes`) VALUES ('"+req.body.newclass+"');"
   const result = await queryAsync(query)
   res.send(result)
+  }
 })
 app.post('/delete-that-class',async (req,res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
 
   const query = "DELETE FROM `attendence`.`classes` WHERE (`classes` = '"+req.body.deleteclass+"');"
   const result = await queryAsync(query)
   res.send(result)
-
+  }
 })
 app.post('/add-new-section',async (req,res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const query = "INSERT INTO `attendence`.`sections` (`sections`) VALUES ('"+req.body.newsection+"');"
   const result = await queryAsync(query)
   res.send(result)
+  }
 })
 app.post('/delete-that-section',async (req,res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
 
   const query = "DELETE FROM `attendence`.`sections` WHERE (`sections` = '"+req.body.deletesection+"');"
   const result = await queryAsync(query)
   res.send(result)
-
+  }
 })
 app.post('/add-new-department',async (req,res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const query = "INSERT INTO `attendence`.`departments` (`department`) VALUES ('"+req.body.newdepartment+"');"
   const result = await queryAsync(query)
   res.send(result)
+  }
 })
 app.post('/delete-that-department',async (req,res) => {
-
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const query = "DELETE FROM `attendence`.`departments` WHERE (`department` = '"+req.body.deletedepartment+"');"
   const result = await queryAsync(query)
   res.send(result)
-
+  }
 })
 app.post('/add-new-shift',async (req,res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const query = "INSERT INTO `attendence`.`shifts` (`shifts`) VALUES ('"+req.body.newshift+"');"
   const result = await queryAsync(query)
   res.send(result)
+  }
 })
 app.post('/delete-that-shift',async (req,res) => {
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const query = "DELETE FROM `attendence`.`shifts` WHERE (`shifts` = '"+req.body.deleteshift+"');"
   const result = await queryAsync(query)
   res.send(result)
+  }
 })
 app.post('/add-user', async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   let userdata = req.body.userdata
   let permissions = req.body.permissionsarray
 
@@ -1157,16 +1288,19 @@ app.post('/add-user', async (req,res)=>{
       for(var i = 0; i<permissions.length; i++){
         queryAsync("INSERT INTO `attendence`.`permissions` (`employee_number`, `permission`) VALUES ('"+userdata.employee_number+"', '"+permissions[i]+"');")
       }
-      res.send({response:'all ok'})
+      res.send({error:false})
     }else{
-      res.send({error:'dublicate entry'})
+      res.send({error:true})
 
     }
 
   });
+  }
 
 })
 app.post('/modify-user', async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   let employee = req.body.employee
   let permissions = req.body.upstate
 
@@ -1193,17 +1327,22 @@ mysql.query(qry1, (error, result) => {
           }});
 
     }});
-
+  }
 })
 app.post('/match-user',async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   let data =await queryAsync("SELECT employee_number,emp_token,employee_full_name FROM attendence.employees where emp_token='"+req.body.userName+"';")
   if(data.length === 0){
   res.send({username:'f33af23235456fgg433ggwg43662436;;K;$#$$3gGgg43$%#$%geGrt$#%5gfd$%v65654',emp_token:'36;;K;$#$$3gGgg43$gwg43662436;;K;$#$$3gGgg43$%%#$%geGrt$#%5gfd$%v65654'})
   }else{
   res.send(data[0])
   }
+}
 })
 app.post('/get-permissions',async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   var data = []
   var responsearray = []
   try{
@@ -1216,20 +1355,25 @@ app.post('/get-permissions',async (req,res)=>{
     console.log(err)
   }
   res.send(responsearray)
+}
 })
 app.post('/assign-classes',async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const data = req.body.selectedValue
+  const resu = await queryAsync("select * from attendence.classpermissions where employee_number = '"+data.employee_number+"' and class='"+data.classn+"' and section = '"+data.section+"';")
   const qry = "INSERT INTO `attendence`.`classpermissions` (`employee_number`, `class`, `section`) VALUES ('"+data.employee_number+"', '"+data.classn+"', '"+data.section+"');"
-  mysql.query(qry, (error, result) => {
-    if (error){
-      res.send({error:true})
-    }else{
-      res.send({error:false})
-    }
-  });
-
+  if(resu.length===0){
+  await queryAsync(qry)
+    res.send({error:false})
+}else{
+  res.send({error:true})
+}
+  }
 })
 app.post('/get-assigned-classes',async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const qry = "SELECT s.employee_number,employee_full_name,a.class,a.section,a.idclasspermissions FROM employees s JOIN classpermissions a ON s.employee_number = a.employee_number;"
   mysql.query(qry, (error, result) => {
     if (error){
@@ -1238,8 +1382,11 @@ app.post('/get-assigned-classes',async (req,res)=>{
       res.send(result)
     }
   });
+}
 })
 app.post('/delete-class-permission',async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const qry = "DELETE FROM `attendence`.`classpermissions` WHERE (`idclasspermissions` = '"+req.body.data+"');"
   mysql.query(qry, (error, result) => {
     if (error){
@@ -1248,8 +1395,11 @@ app.post('/delete-class-permission',async (req,res)=>{
       res.send(result)
     }
   });
+}
 })
 app.post('/get-special-classes', async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
 const matcher = await queryAsync("Select * from attendence.employees where emp_token = '"+req.body.number+"';")
 
 const qry = "SELECT * FROM attendence.classpermissions where employee_number = '"+matcher[0].employee_number+"';"
@@ -1261,8 +1411,11 @@ const qry = "SELECT * FROM attendence.classpermissions where employee_number = '
       res.send(result)
     }
   });
+}
 })
 app.post('/get-special-sections', async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const matcher = await queryAsync("Select * from attendence.employees where emp_token = '"+req.body.number+"';")
   const qry = "SELECT * FROM attendence.classpermissions where employee_number = '"+matcher[0].employee_number+"';"
     mysql.query(qry, (error, result) => {
@@ -1272,9 +1425,11 @@ app.post('/get-special-sections', async (req,res)=>{
         res.send(result)
       }
     });
+  }
 })
 app.post('/department-report', async (req,res)=>{
-
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
 const {crietaria,duration,dates,shift} = req.body
 const qry = "SELECT * FROM attendence.attendence left join attendence.students on attendence.attendence.admission_number = attendence.students.admission_number where shift = '"+shift+"';"
 const match = await queryAsync(qry)
@@ -1516,10 +1671,12 @@ if(crietaria==='daily'){
   })
 }
 
-
+  }
 
 })
 app.post('/class-report', async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const {crietaria,duration,dates,classn,section} = req.body
 
   const qry = "SELECT * FROM students JOIN attendence ON students.admission_number = attendence.admission_number where class = '"+classn+"' and section = '"+section+"';"
@@ -1766,10 +1923,12 @@ app.post('/class-report', async (req,res)=>{
     })
   }
   
-  
+}
   
 })
 app.post('/student-report', async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
 
 const {admission_number,dates,crietaria} = req.body
 
@@ -2080,15 +2239,17 @@ var newqry = "attendence.admission_number,"
       lated:ulated
     })
   }
-
+  }
 
 })
 app.post('/get-warning-letters',async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
   const {classn,section,session} = req.body
   const dates = await queryAsync("select * from attendence.sessiondates where session = '"+session+"';")
   const dates1 = dates[0]
-  var sdate = await convertDateFormatzx(dates1.startdate)
-  var ldate = await convertDateFormatzx(dates1.enddate)
+  var sdate = convertDateFormatzx(dates1.startdate)
+  var ldate = convertDateFormatzx(dates1.enddate)
   sdate = convertDate(sdate)
   ldate = convertDate(ldate)
   const students = await queryAsync("select * from attendence.students where class = '"+classn+"' and section = '"+section+"';")
@@ -2123,102 +2284,109 @@ app.post('/get-warning-letters',async (req,res)=>{
       attendancearray.push(hel[pel])
     }
     const total = countOccurrences(attendancearray, 'a');
-    var checked = 'pending'
+    var checked = ''
+
     if(total>9){
 
-      var datapush = {name:students[iii].student_full_name,admission_number:students[iii].admission_number,roll_no:students[iii].roll_no,absent_count:total,warningtype:'First',warning_status:checked}
       for(var t=0; t<warnings.length; t++){
-        if(warnings[t].roll_no === datapush.roll_no & warnings[t].warning_type === datapush.warningtype){
+        if(warnings[t].roll_no === students[iii].roll_no & warnings[t].warning_type === 'First'){
           checked = 'dispatched'
         }
       }
+      var datapush = {name:students[iii].student_full_name,admission_number:students[iii].admission_number,roll_no:students[iii].roll_no,absent_count:total,warningtype:'First',warning_status:checked}
+
       warningletters.push(datapush)
     }
     if(total>19){
-      var datapush = {name:students[iii].student_full_name,admission_number:students[iii].admission_number,roll_no:students[iii].roll_no,absent_count:total,warningtype:'Second',warning_status:checked}
       for(var t=0; t<warnings.length; t++){
-        if(warnings[t].roll_no === datapush.roll_no & warnings[t].warning_type === datapush.warningtype){
+        if(warnings[t].roll_no === students[iii].roll_no & warnings[t].warning_type === 'Second'){
           checked = 'dispatched'
         }
       }
+      var datapush = {name:students[iii].student_full_name,admission_number:students[iii].admission_number,roll_no:students[iii].roll_no,absent_count:total,warningtype:'Second',warning_status:checked}
+
       warningletters.push(datapush)
     }
     if(total>29){
-      var datapush = {name:students[iii].student_full_name,admission_number:students[iii].admission_number,roll_no:students[iii].roll_no,absent_count:total,warningtype:'Third',warning_status:checked}
       for(var t=0; t<warnings.length; t++){
-        if(warnings[t].roll_no === datapush.roll_no & warnings[t].warning_type === datapush.warningtype){
+        if(warnings[t].roll_no === students[iii].roll_no & warnings[t].warning_type === 'Third'){
           checked = 'dispatched'
         }
       }
+      var datapush = {name:students[iii].student_full_name,admission_number:students[iii].admission_number,roll_no:students[iii].roll_no,absent_count:total,warningtype:'Third',warning_status:checked}
+
       warningletters.push(datapush)
     }
 
   }
 
   res.send(warningletters)
+}
 })
 app.post('/get-student-attendance',async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
 console.log(req.body)
-})
-
-app.post('/warning-letters', async (req,res)=>{
-  const {classn,section,sessiont} = req.body
-  const qry1 = ""
-  console.log(req.body)
-
-  res.send({classn,section,sessiont})
-
+  }
 })
 app.post('/promote-students', async (req,res)=>{
-console.log(req.body)
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
+const {orign,destination} = req.body
+const query = "UPDATE `attendence`.`students` SET `class` = '"+destination.class+"', `section` = '"+destination.section+"' where class = '"+orign.class+"' and section = '"+orign.section+"';"
+mysql.query(query, (error, result) => {
+  if (error){
+    res.send({error:true})
+  }else{
 
-res.send(req.body)
+    res.send({error:false})
+  }
+});
+  }
 })
-function getCurrentTime() {
-  const currentDate = new Date();
-  let hours = currentDate.getHours();
-  let minutes = currentDate.getMinutes();
-  let seconds = currentDate.getSeconds();
-
-  // Add leading zeros if needed
-  hours = hours < 10 ? '0' + hours : hours;
-  minutes = minutes < 10 ? '0' + minutes : minutes;
-  seconds = seconds < 10 ? '0' + seconds : seconds;
-
-  // Return the formatted time string
-  return `${hours}:${minutes}:${seconds}`;
-}
-function getCurrentDatetx() {
-  const currentDate = new Date();
-  const day = currentDate.getDate();
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-  const monthIndex = currentDate.getMonth();
-  const year = currentDate.getFullYear();
-
-  // Format the date with the day, month name, and year
-  const formattedDate = `${day}-${monthNames[monthIndex]}-${year}`;
-
-  return formattedDate;
-}
-
 app.post('/write-logs', async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
 const time = getCurrentTime()
 const date = getCurrentDatetx()
 const {token,username,activity,path} = req.body
 const query = "INSERT INTO `attendence`.`logs` (`token`, `username`, `time`, `date`, `activity`,`path`) VALUES ('"+token+"', '"+username+"', '"+time+"', '"+date+"', '"+activity+"', '"+path+"');"
 const result = await queryAsync(query)
 res.send(result)
-
+  }
 })
 app.post('/read-logs', async (req,res)=>{
-const query = "SELECT * FROM attendence.logs;"
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
+const query = "SELECT * FROM attendence.logs WHERE date = '"+req.body.date+"' and username = '"+req.body.username+"';"
 const result = await queryAsync(query)
 res.send(result)
-
+  }
 })
+app.post('/get-users', async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
+  const query = "SELECT employee_full_name FROM attendence.employees;"
+  const result = await queryAsync(query)
+  res.send(result)
+  }
+})
+app.post('/warning-dispatched', async (req,res)=>{
+  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
+  if(authorize.length===1){
+    const query = "INSERT INTO `attendence`.`warningletters` (`roll_no`, `warning_type`) VALUES ('"+req.body.roll_no+"', '"+req.body.warningtype+"');"
+    mysql.query(query, (error, result) => {
+      if (error){
+        res.send({error:true})
+      }else{
+    
+        res.send({error:false})
+      }
+    });
+  }
+})
+
+  
 
 app.listen(port,function(){
   console.log("server is up");
