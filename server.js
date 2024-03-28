@@ -1330,15 +1330,14 @@ mysql.query(qry1, (error, result) => {
   }
 })
 app.post('/match-user',async (req,res)=>{
-  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
-  if(authorize.length===1){
+
   let data =await queryAsync("SELECT employee_number,emp_token,employee_full_name FROM attendence.employees where emp_token='"+req.body.userName+"';")
   if(data.length === 0){
   res.send({username:'f33af23235456fgg433ggwg43662436;;K;$#$$3gGgg43$%#$%geGrt$#%5gfd$%v65654',emp_token:'36;;K;$#$$3gGgg43$gwg43662436;;K;$#$$3gGgg43$%%#$%geGrt$#%5gfd$%v65654'})
   }else{
   res.send(data[0])
   }
-}
+
 })
 app.post('/get-permissions',async (req,res)=>{
   const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
@@ -2345,15 +2344,14 @@ mysql.query(query, (error, result) => {
   }
 })
 app.post('/write-logs', async (req,res)=>{
-  const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
-  if(authorize.length===1){
+
 const time = getCurrentTime()
 const date = getCurrentDatetx()
 const {token,username,activity,path} = req.body
 const query = "INSERT INTO `attendence`.`logs` (`token`, `username`, `time`, `date`, `activity`,`path`) VALUES ('"+token+"', '"+username+"', '"+time+"', '"+date+"', '"+activity+"', '"+path+"');"
 const result = await queryAsync(query)
 res.send(result)
-  }
+
 })
 app.post('/read-logs', async (req,res)=>{
   const authorize = await queryAsync("select *from attendence.employees where password = '"+req.body.token+"';")
